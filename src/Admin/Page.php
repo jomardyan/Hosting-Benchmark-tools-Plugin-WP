@@ -378,7 +378,9 @@ class Page {
 		echo '.wp-hosting-benchmark-table td{line-height:1.55;overflow-wrap:break-word;}';
 		echo '.wp-hosting-benchmark-table tr.active td{background:#f3fbff;}';
 		echo '.wp-hosting-benchmark-table .column-actions{white-space:nowrap;}';
-		echo '.wp-hosting-benchmark-results-table{min-width:1080px;}';
+		echo '.wp-hosting-benchmark-results-table{min-width:0;table-layout:fixed;}';
+		echo '.wp-hosting-benchmark-results-table th,.wp-hosting-benchmark-results-table td{white-space:normal;overflow-wrap:anywhere;}';
+		echo '.wp-hosting-benchmark-results-table th:nth-child(1){width:21%;}.wp-hosting-benchmark-results-table th:nth-child(2){width:14%;}.wp-hosting-benchmark-results-table th:nth-child(3){width:10%;}.wp-hosting-benchmark-results-table th:nth-child(4){width:10%;}.wp-hosting-benchmark-results-table th:nth-child(5){width:9%;}.wp-hosting-benchmark-results-table th:nth-child(6){width:9%;}.wp-hosting-benchmark-results-table th:nth-child(7){width:14%;}.wp-hosting-benchmark-results-table th:nth-child(8){width:13%;}';
 		echo '.wp-hosting-benchmark-history-table{min-width:740px;}';
 		echo '.wp-hosting-benchmark-pill{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:#f0f0f1;}';
 		echo '.wp-hosting-benchmark-pill--success{background:#d1fae5;color:#065f46;}';
@@ -395,6 +397,7 @@ class Page {
 		echo '@media (max-width:1280px){.wp-hosting-benchmark-dashboard{grid-template-columns:1fr;}.wp-hosting-benchmark-sidebar{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}}';
 		echo '@media (max-width:960px){.wp-hosting-benchmark-summary-grid{grid-template-columns:1fr;}}';
 		echo '@media (max-width:782px){.wp-hosting-benchmark-header{flex-direction:column;align-items:stretch;padding:24px;}.wp-hosting-benchmark-header-meta{min-width:0;}}';
+		echo '@media (max-width:782px){.wp-hosting-benchmark-results-table,.wp-hosting-benchmark-results-table thead,.wp-hosting-benchmark-results-table tbody,.wp-hosting-benchmark-results-table tr,.wp-hosting-benchmark-results-table td{display:block;width:100%;}.wp-hosting-benchmark-results-table thead{position:absolute;clip:rect(1px,1px,1px,1px);clip-path:inset(50%);height:1px;overflow:hidden;white-space:nowrap;width:1px;}.wp-hosting-benchmark-results-table tr{margin:0 0 12px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;overflow:hidden;}.wp-hosting-benchmark-results-table td{display:grid;grid-template-columns:minmax(110px,34%) minmax(0,1fr);gap:12px;align-items:start;padding:10px 12px;border-bottom:1px solid #eef2f7;}.wp-hosting-benchmark-results-table td:last-child{border-bottom:0;}.wp-hosting-benchmark-results-table td::before{content:attr(data-label);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;}}';
 		echo '@media (max-width:600px){.wp-hosting-benchmark-page{margin-right:0;}.wp-hosting-benchmark-card{padding:20px;border-radius:20px;}.wp-hosting-benchmark-header h1{font-size:28px;}.wp-hosting-benchmark-verdict-title{font-size:24px;}.wp-hosting-benchmark-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}';
 		echo '@media (max-width:480px){.wp-hosting-benchmark-stat-grid,.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{grid-template-columns:1fr;}.wp-hosting-benchmark-speedometer-value{font-size:48px;}}';
 		echo '</style>';
@@ -718,14 +721,14 @@ class Page {
 
 		foreach ( $run['results'] as $result ) {
 			echo '<tr>';
-			echo '<td>' . esc_html( $result['label'] ) . '</td>';
-			echo '<td>' . esc_html( $result['category_label'] ) . '</td>';
-			echo '<td>' . $this->render_status_badge( $result['status'] ) . '</td>';
-			echo '<td>' . esc_html( number_format_i18n( (float) $result['duration_ms'], 2 ) ) . '</td>';
-			echo '<td>' . esc_html( number_format_i18n( (int) $result['operations'] ) ) . '</td>';
-			echo '<td>' . esc_html( null === $result['ops_per_second'] ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( (float) $result['ops_per_second'], 2 ) ) . '</td>';
-			echo '<td>' . esc_html( $this->format_metric( $result ) ) . '</td>';
-			echo '<td>' . esc_html( '' !== $result['error_message'] ? $result['error_message'] : __( 'Completed successfully.', 'wp-hosting-benchmark' ) ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Test', 'wp-hosting-benchmark' ) . '">' . esc_html( $result['label'] ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Category', 'wp-hosting-benchmark' ) . '">' . esc_html( $result['category_label'] ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Status', 'wp-hosting-benchmark' ) . '">' . $this->render_status_badge( $result['status'] ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Duration (ms)', 'wp-hosting-benchmark' ) . '">' . esc_html( number_format_i18n( (float) $result['duration_ms'], 2 ) ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Operations', 'wp-hosting-benchmark' ) . '">' . esc_html( number_format_i18n( (int) $result['operations'] ) ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Ops/sec', 'wp-hosting-benchmark' ) . '">' . esc_html( null === $result['ops_per_second'] ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( (float) $result['ops_per_second'], 2 ) ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Raw metric', 'wp-hosting-benchmark' ) . '">' . esc_html( $this->format_metric( $result ) ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Message', 'wp-hosting-benchmark' ) . '">' . esc_html( '' !== $result['error_message'] ? $result['error_message'] : __( 'Completed successfully.', 'wp-hosting-benchmark' ) ) . '</td>';
 			echo '</tr>';
 		}
 
