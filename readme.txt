@@ -3,7 +3,7 @@ Contributors: github-copilot
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 7.2.24
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: benchmark, performance, hosting, diagnostics, admin

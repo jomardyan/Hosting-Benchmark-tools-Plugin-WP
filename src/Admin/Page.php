@@ -51,6 +51,7 @@ class Page {
 	public function register() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_post_wp_hosting_benchmark_run', array( $this, 'handle_run' ) );
+		add_action( 'admin_post_wp_hosting_benchmark_delete_run', array( $this, 'handle_delete_run' ) );
 		add_action( 'admin_post_wp_hosting_benchmark_clear_history', array( $this, 'handle_clear_history' ) );
 	}
 
@@ -126,6 +127,43 @@ class Page {
 	}
 
 	/**
+	 * Handle deletion of one benchmark run.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_run() {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'wp-hosting-benchmark' ) );
+		}
+
+		$run_id              = isset( $_POST['benchmark_id'] ) ? sanitize_text_field( wp_unslash( $_POST['benchmark_id'] ) ) : '';
+		$redirect_benchmark = isset( $_POST['redirect_benchmark_id'] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_benchmark_id'] ) ) : '';
+
+		check_admin_referer( 'wp_hosting_benchmark_delete_run_' . $run_id );
+
+		try {
+			if ( '' === $run_id || ! $this->storage->delete_run( $run_id ) ) {
+				throw new \RuntimeException( __( 'The selected benchmark run could not be found.', 'wp-hosting-benchmark' ) );
+			}
+
+			$args = array(
+				'notice' => 'run-deleted',
+			);
+
+			if ( '' !== $redirect_benchmark && $redirect_benchmark !== $run_id && $this->storage->get_run( $redirect_benchmark ) ) {
+				$args['benchmark_id'] = $redirect_benchmark;
+			}
+
+			wp_safe_redirect( $this->get_page_url( $args ) );
+		} catch ( \Throwable $throwable ) {
+			$this->set_flash_notice( 'error', $this->build_safe_error_message( $throwable, __( 'The benchmark run could not be deleted.', 'wp-hosting-benchmark' ) ) );
+			wp_safe_redirect( $this->get_page_url() );
+		}
+
+		exit;
+	}
+
+	/**
 	 * Render the admin page.
 	 *
 	 * @return void
@@ -150,38 +188,29 @@ class Page {
 
 		echo '<div class="wrap wp-hosting-benchmark-page">';
 		$this->render_inline_assets();
-		echo '<div class="wp-hosting-benchmark-shell">';
-		echo '<div class="wp-hosting-benchmark-header">';
-		echo '<div>';
-		echo '<p class="wp-hosting-benchmark-kicker">' . esc_html__( 'Hosting Health Dashboard', 'wp-hosting-benchmark' ) . '</p>';
 		echo '<h1>' . esc_html__( 'Hosting Benchmark', 'wp-hosting-benchmark' ) . '</h1>';
 		echo '<p class="wp-hosting-benchmark-intro">' . esc_html__( 'Run short, hosting-safe benchmarks from the admin area, review real-world WordPress performance signals, and translate the results into a clear hosting verdict.', 'wp-hosting-benchmark' ) . '</p>';
-		echo '</div>';
 
 		if ( $selected_run ) {
 			$header_verdict = $this->get_final_verdict( $selected_run );
-			echo '<div class="wp-hosting-benchmark-header-meta">';
-			echo '<span class="wp-hosting-benchmark-header-chip">' . esc_html__( 'Selected report', 'wp-hosting-benchmark' ) . '</span>';
-			echo '<strong>' . esc_html( $header_verdict['title'] ) . '</strong>';
-			echo '<span class="wp-hosting-benchmark-subtle">' . esc_html( sprintf( __( 'Score %1$s / Confidence %2$s%%', 'wp-hosting-benchmark' ), number_format_i18n( (int) $selected_run['scores']['overall'] ), number_format_i18n( (int) $selected_run['scores']['confidence'] ) ) ) . '</span>';
-			echo '<span class="wp-hosting-benchmark-subtle">' . esc_html( $this->format_run_timestamp( $selected_run['created_at'] ) ) . '</span>';
-			echo '</div>';
+			echo '<div class="notice notice-info inline wp-hosting-benchmark-selected-report"><p>';
+			echo '<strong>' . esc_html__( 'Selected report:', 'wp-hosting-benchmark' ) . '</strong> ';
+			echo esc_html( $header_verdict['title'] ) . ' ';
+			echo '<span class="description">' . esc_html( sprintf( __( 'Score %1$s, confidence %2$s%%, recorded %3$s.', 'wp-hosting-benchmark' ), number_format_i18n( (int) $selected_run['scores']['overall'] ), number_format_i18n( (int) $selected_run['scores']['confidence'] ), $this->format_run_timestamp( $selected_run['created_at'] ) ) ) . '</span>';
+			echo '</p></div>';
 		} else {
-			echo '<div class="wp-hosting-benchmark-header-meta">';
-			echo '<span class="wp-hosting-benchmark-header-chip">' . esc_html__( 'Awaiting first report', 'wp-hosting-benchmark' ) . '</span>';
-			echo '<strong>' . esc_html__( 'Run a benchmark to generate a live hosting verdict.', 'wp-hosting-benchmark' ) . '</strong>';
-			echo '</div>';
+			echo '<div class="notice notice-info inline wp-hosting-benchmark-selected-report"><p>' . esc_html__( 'Run a benchmark to generate a live hosting verdict.', 'wp-hosting-benchmark' ) . '</p></div>';
 		}
 
-		echo '</div>';
 		$this->render_notice( $missing_run );
-		echo '<div class="wp-hosting-benchmark-dashboard">';
-		echo '<div class="wp-hosting-benchmark-main">';
+		echo '<div id="poststuff" class="wp-hosting-benchmark-poststuff">';
+		echo '<div id="post-body" class="metabox-holder columns-2">';
+		echo '<div id="post-body-content">';
 		$this->render_summary( $selected_run );
 		$this->render_results( $selected_run );
 		$this->render_history( $history, $selected_id );
 		echo '</div>';
-		echo '<div class="wp-hosting-benchmark-sidebar">';
+		echo '<div id="postbox-container-1" class="postbox-container">';
 		$this->render_controls( $selected_run );
 		$this->render_interpretation_guide( $selected_run );
 		$this->render_environment( $environment );
@@ -231,6 +260,8 @@ class Page {
 
 		if ( 'benchmark-complete' === $notice ) {
 			$text = __( 'Benchmark run completed.', 'wp-hosting-benchmark' );
+		} elseif ( 'run-deleted' === $notice ) {
+			$text = __( 'Benchmark run deleted.', 'wp-hosting-benchmark' );
 		} elseif ( 'history-cleared' === $notice ) {
 			$text = __( 'Benchmark history cleared.', 'wp-hosting-benchmark' );
 		}
@@ -313,93 +344,82 @@ class Page {
 	 */
 	protected function render_inline_assets() {
 		$high_warning  = __( 'High intensity runs more iterations. It remains shared-hosting safe, but it should only be used when you can tolerate a slightly longer admin request.', 'wp-hosting-benchmark' );
+		$delete_warning = __( 'Delete this benchmark run? This cannot be undone.', 'wp-hosting-benchmark' );
 		$clear_warning = __( 'This clears all stored benchmark history. Continue?', 'wp-hosting-benchmark' );
 		$running_label = __( 'Running...', 'wp-hosting-benchmark' );
+		$deleting_label = __( 'Deleting...', 'wp-hosting-benchmark' );
 		$clearing_label = __( 'Clearing...', 'wp-hosting-benchmark' );
 
 		echo '<style>';
-		echo '.wp-hosting-benchmark-page{--wp-hosting-benchmark-ink:#0f172a;--wp-hosting-benchmark-muted:#475569;--wp-hosting-benchmark-border:#d9e2ec;--wp-hosting-benchmark-surface:#ffffff;--wp-hosting-benchmark-surface-muted:#f8fafc;--wp-hosting-benchmark-shadow:0 18px 40px rgba(15,23,42,.08);--wp-hosting-benchmark-tone:#0f766e;--wp-hosting-benchmark-tone-soft:#dff6f2;}';
 		echo '.wp-hosting-benchmark-page *{box-sizing:border-box;}';
-		echo '.wp-hosting-benchmark-shell{width:100%;max-width:1460px;display:grid;gap:24px;container-type:inline-size;container-name:benchmark-shell;}';
-		echo '.wp-hosting-benchmark-header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:28px 30px;border-radius:26px;border:1px solid var(--wp-hosting-benchmark-border);background:linear-gradient(135deg,#fbfdff 0%,#edf8f5 55%,#ffffff 100%);box-shadow:var(--wp-hosting-benchmark-shadow);}';
-		echo '.wp-hosting-benchmark-kicker,.wp-hosting-benchmark-section-label{margin:0;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:#0f766e;}';
-		echo '.wp-hosting-benchmark-header h1{margin:10px 0 8px;font-size:34px;line-height:1.08;color:var(--wp-hosting-benchmark-ink);}';
-		echo '.wp-hosting-benchmark-intro{margin:0;max-width:72ch;font-size:14px;line-height:1.6;color:var(--wp-hosting-benchmark-muted);}';
-		echo '.wp-hosting-benchmark-header-meta{display:grid;gap:8px;justify-items:start;padding:18px 20px;border-radius:20px;background:rgba(255,255,255,.8);border:1px solid rgba(15,118,110,.16);min-width:min(100%,280px);}';
-		echo '.wp-hosting-benchmark-header-chip,.wp-hosting-benchmark-verdict-chip,.wp-hosting-benchmark-breakdown-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}';
-		echo '.wp-hosting-benchmark-header-chip{background:#e0f2fe;color:#0c4a6e;}';
-		echo '.wp-hosting-benchmark-dashboard{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,400px);gap:24px;align-items:start;}';
-		echo '.wp-hosting-benchmark-main,.wp-hosting-benchmark-sidebar{display:grid;gap:24px;}';
-		echo '.wp-hosting-benchmark-card{width:100%;max-width:none;margin:0;padding:24px;border-radius:24px;border:1px solid var(--wp-hosting-benchmark-border);background:var(--wp-hosting-benchmark-surface);box-shadow:var(--wp-hosting-benchmark-shadow);min-width:0;}';
-		echo '.wp-hosting-benchmark-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;}';
-		echo '.wp-hosting-benchmark-card-header h2{margin:8px 0 0;font-size:24px;line-height:1.15;color:var(--wp-hosting-benchmark-ink);}';
-		echo '.wp-hosting-benchmark-card-intro,.wp-hosting-benchmark-card .description,.wp-hosting-benchmark-subtle{color:var(--wp-hosting-benchmark-muted);}';
-		echo '.wp-hosting-benchmark-card-intro{margin:10px 0 0;line-height:1.6;}';
-		echo '.wp-hosting-benchmark-select{width:100%;max-width:100%;margin-top:8px;}';
-		echo '.wp-hosting-benchmark-button-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}';
-		echo '.wp-hosting-benchmark-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}';
-		echo '.wp-hosting-benchmark-guide-list{margin:0;padding-left:18px;}';
-		echo '.wp-hosting-benchmark-guide-list li{margin:0 0 10px;line-height:1.5;color:#334155;}';
-		echo '.wp-hosting-benchmark-summary-card{background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);}';
-		echo '.wp-hosting-benchmark-tone--excellent{--wp-hosting-benchmark-tone:#0f766e;--wp-hosting-benchmark-tone-soft:#dff6f2;}';
-		echo '.wp-hosting-benchmark-tone--good{--wp-hosting-benchmark-tone:#0369a1;--wp-hosting-benchmark-tone-soft:#e0f2fe;}';
-		echo '.wp-hosting-benchmark-tone--fair{--wp-hosting-benchmark-tone:#b45309;--wp-hosting-benchmark-tone-soft:#fef3c7;}';
-		echo '.wp-hosting-benchmark-tone--critical{--wp-hosting-benchmark-tone:#b91c1c;--wp-hosting-benchmark-tone-soft:#fee2e2;}';
-		echo '.wp-hosting-benchmark-summary-grid{display:grid;grid-template-columns:minmax(260px,320px) minmax(320px,1fr);gap:28px;align-items:start;margin-bottom:24px;}';
+		echo '.wp-hosting-benchmark-intro{max-width:860px;margin:6px 0 16px;color:#50575e;}';
+		echo '.wp-hosting-benchmark-selected-report{margin:12px 0 16px;}';
+		echo '.wp-hosting-benchmark-poststuff{padding-top:0;}.wp-hosting-benchmark-poststuff #post-body.columns-2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;margin-right:0;}.wp-hosting-benchmark-poststuff #post-body-content{min-width:0;}.wp-hosting-benchmark-poststuff #postbox-container-1{float:none;width:auto;margin:0;}';
+		echo '.wp-hosting-benchmark-card{width:100%;max-width:none;margin:0 0 16px;padding:12px;border:1px solid #c3c4c7;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.04);min-width:0;}';
+		echo '.wp-hosting-benchmark-card-header{display:block;margin:-12px -12px 12px;padding:8px 12px;border-bottom:1px solid #c3c4c7;background:#fff;}';
+		echo '.wp-hosting-benchmark-card-header h2,.wp-hosting-benchmark-card>h2{margin:0;font-size:14px;line-height:1.4;font-weight:600;color:#1d2327;}';
+		echo '.wp-hosting-benchmark-section-label{display:none;}';
+		echo '.wp-hosting-benchmark-card-intro,.wp-hosting-benchmark-card .description,.wp-hosting-benchmark-subtle{color:#646970;}';
+		echo '.wp-hosting-benchmark-card-intro{margin:6px 0 12px;line-height:1.5;}';
+		echo '.wp-hosting-benchmark-card .form-table{margin:0;}.wp-hosting-benchmark-card .form-table th{width:90px;padding:8px 10px 8px 0;}.wp-hosting-benchmark-card .form-table td{padding:4px 0 8px;}';
+		echo '.wp-hosting-benchmark-select{width:100%;max-width:100%;margin:6px 0 8px;}';
+		echo '.wp-hosting-benchmark-button-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}';
+		echo '.wp-hosting-benchmark-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}';
+		echo '.wp-hosting-benchmark-actions form{margin:0;}';
+		echo '.wp-hosting-benchmark-guide-list{margin:0 0 0 18px;}';
+		echo '.wp-hosting-benchmark-guide-list li{margin:0 0 8px;line-height:1.5;}';
+		echo '.wp-hosting-benchmark-tone--excellent{--wp-hosting-benchmark-tone:#00a32a;}';
+		echo '.wp-hosting-benchmark-tone--good{--wp-hosting-benchmark-tone:#2271b1;}';
+		echo '.wp-hosting-benchmark-tone--fair{--wp-hosting-benchmark-tone:#dba617;}';
+		echo '.wp-hosting-benchmark-tone--critical{--wp-hosting-benchmark-tone:#d63638;}';
+		echo '.wp-hosting-benchmark-summary-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:start;margin-bottom:16px;}';
 		echo '.wp-hosting-benchmark-summary-grid>*{min-width:0;}';
-		echo '.wp-hosting-benchmark-speedometer{display:grid;justify-items:center;gap:10px;padding:20px 18px 16px;border-radius:22px;background:linear-gradient(180deg,#ffffff 0%,#f6fbff 100%);border:1px solid #dbe7ee;color:var(--wp-hosting-benchmark-tone);}';
-		echo '.wp-hosting-benchmark-speedometer-svg{display:block;width:min(100%,300px);height:auto;}';
-		echo '.wp-hosting-benchmark-speedometer-caption{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;}';
-		echo '.wp-hosting-benchmark-speedometer-value{font-size:58px;line-height:1;font-weight:700;color:var(--wp-hosting-benchmark-tone);}';
-		echo '.wp-hosting-benchmark-speedometer-note{margin:0;color:#64748b;}';
-		echo '.wp-hosting-benchmark-verdict-chip{background:var(--wp-hosting-benchmark-tone-soft);color:var(--wp-hosting-benchmark-tone);}';
-		echo '.wp-hosting-benchmark-verdict-title{margin:14px 0 12px;font-size:30px;line-height:1.12;color:var(--wp-hosting-benchmark-ink);}';
-		echo '.wp-hosting-benchmark-verdict-copy{margin:0 0 18px;font-size:15px;line-height:1.65;color:#334155;max-width:68ch;}';
-		echo '.wp-hosting-benchmark-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 0;}';
-		echo '.wp-hosting-benchmark-stat-card{padding:16px;border-radius:18px;border:1px solid #dde6ef;background:#f8fafc;}';
-		echo '.wp-hosting-benchmark-stat-label{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;}';
-		echo '.wp-hosting-benchmark-stat-value{display:block;margin-top:8px;font-size:24px;line-height:1.2;font-weight:700;color:var(--wp-hosting-benchmark-ink);overflow-wrap:anywhere;}';
-		echo '.wp-hosting-benchmark-stat-copy{display:block;margin-top:6px;font-size:12px;line-height:1.45;color:#64748b;}';
-		echo '.wp-hosting-benchmark-result-breakdown{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}';
-		echo '.wp-hosting-benchmark-breakdown-pill{background:#fff;border:1px solid #dbe4ee;color:#334155;text-transform:none;letter-spacing:0;font-size:13px;}';
-		echo '.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}';
-		echo '.wp-hosting-benchmark-category-card,.wp-hosting-benchmark-environment-item{padding:16px;border-radius:18px;border:1px solid #dbe4ee;background:#fff;}';
-		echo '.wp-hosting-benchmark-category-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}';
-		echo '.wp-hosting-benchmark-category-title{font-size:14px;font-weight:600;color:var(--wp-hosting-benchmark-ink);}';
-		echo '.wp-hosting-benchmark-category-score{font-size:24px;line-height:1;font-weight:700;color:var(--wp-hosting-benchmark-ink);}';
-		echo '.wp-hosting-benchmark-category-bar{height:10px;margin:14px 0 10px;border-radius:999px;background:#e8eef5;overflow:hidden;}';
-		echo '.wp-hosting-benchmark-category-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--wp-hosting-benchmark-tone) 0%,#38bdf8 100%);}';
-		echo '.wp-hosting-benchmark-category-meta,.wp-hosting-benchmark-environment-label{margin:0;font-size:12px;line-height:1.45;color:#64748b;}';
-		echo '.wp-hosting-benchmark-environment-value{display:block;margin-top:8px;font-size:18px;font-weight:700;line-height:1.35;color:var(--wp-hosting-benchmark-ink);overflow-wrap:anywhere;}';
-		echo '.wp-hosting-benchmark-table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;-webkit-overflow-scrolling:touch;}';
-		echo '.wp-hosting-benchmark-table{width:100%;border-collapse:separate;border-spacing:0;min-width:100%;table-layout:auto;}';
-		echo '.wp-hosting-benchmark-table th,.wp-hosting-benchmark-table td{vertical-align:top;padding:12px 14px;}';
-		echo '.wp-hosting-benchmark-table th{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;background:#f8fafc;}';
-		echo '.wp-hosting-benchmark-table td{line-height:1.55;overflow-wrap:break-word;}';
-		echo '.wp-hosting-benchmark-table tr.active td{background:#f3fbff;}';
+		echo '.wp-hosting-benchmark-speedometer{display:grid;justify-items:center;gap:4px;padding:12px;border:1px solid #dcdcde;background:#f6f7f7;color:var(--wp-hosting-benchmark-tone);}';
+		echo '.wp-hosting-benchmark-speedometer-svg{display:none;}';
+		echo '.wp-hosting-benchmark-speedometer-caption{font-size:11px;font-weight:600;text-transform:uppercase;color:#646970;}';
+		echo '.wp-hosting-benchmark-speedometer-value{font-size:36px;line-height:1;font-weight:600;color:var(--wp-hosting-benchmark-tone);}';
+		echo '.wp-hosting-benchmark-speedometer-note{margin:0;color:#646970;}';
+		echo '.wp-hosting-benchmark-verdict-chip{display:none;}';
+		echo '.wp-hosting-benchmark-verdict-title{margin:0 0 8px;font-size:18px;line-height:1.3;color:#1d2327;}';
+		echo '.wp-hosting-benchmark-verdict-copy{margin:0 0 12px;line-height:1.5;color:#3c434a;max-width:68ch;}';
+		echo '.wp-hosting-benchmark-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:12px 0 0;}';
+		echo '.wp-hosting-benchmark-stat-card{padding:10px;border:1px solid #dcdcde;background:#f6f7f7;}';
+		echo '.wp-hosting-benchmark-stat-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;color:#646970;}';
+		echo '.wp-hosting-benchmark-stat-value{display:block;margin-top:5px;font-size:18px;line-height:1.25;font-weight:600;color:#1d2327;overflow-wrap:anywhere;}';
+		echo '.wp-hosting-benchmark-stat-copy{display:block;margin-top:4px;font-size:12px;line-height:1.4;color:#646970;}';
+		echo '.wp-hosting-benchmark-result-breakdown{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}';
+		echo '.wp-hosting-benchmark-breakdown-pill{display:inline-block;border:1px solid #dcdcde;background:#f6f7f7;color:#3c434a;padding:3px 7px;font-size:12px;line-height:1.6;}';
+		echo '.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;}';
+		echo '.wp-hosting-benchmark-category-card,.wp-hosting-benchmark-environment-item{padding:10px;border:1px solid #dcdcde;background:#fff;}';
+		echo '.wp-hosting-benchmark-category-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}';
+		echo '.wp-hosting-benchmark-category-title{font-weight:600;color:#1d2327;}';
+		echo '.wp-hosting-benchmark-category-score{font-size:18px;line-height:1;font-weight:600;color:#1d2327;}';
+		echo '.wp-hosting-benchmark-category-bar{height:6px;margin:10px 0 8px;background:#dcdcde;overflow:hidden;}';
+		echo '.wp-hosting-benchmark-category-bar span{display:block;height:100%;background:var(--wp-hosting-benchmark-tone);}';
+		echo '.wp-hosting-benchmark-category-meta,.wp-hosting-benchmark-environment-label{margin:0;font-size:12px;line-height:1.45;color:#646970;}';
+		echo '.wp-hosting-benchmark-environment-value{display:block;margin-top:4px;font-weight:600;line-height:1.35;color:#1d2327;overflow-wrap:anywhere;}';
+		echo '.wp-hosting-benchmark-table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;-webkit-overflow-scrolling:touch;}';
+		echo '.wp-hosting-benchmark-table{width:100%;min-width:100%;table-layout:auto;}';
+		echo '.wp-hosting-benchmark-table th,.wp-hosting-benchmark-table td{vertical-align:top;}';
+		echo '.wp-hosting-benchmark-table td{line-height:1.5;overflow-wrap:break-word;}';
+		echo '.wp-hosting-benchmark-table tr.active td{background:#f0f6fc;}';
 		echo '.wp-hosting-benchmark-table .column-actions{white-space:nowrap;}';
 		echo '.wp-hosting-benchmark-results-table{min-width:0;table-layout:fixed;}';
 		echo '.wp-hosting-benchmark-results-table th,.wp-hosting-benchmark-results-table td{white-space:normal;overflow-wrap:anywhere;}';
 		echo '.wp-hosting-benchmark-results-table th:nth-child(1){width:21%;}.wp-hosting-benchmark-results-table th:nth-child(2){width:14%;}.wp-hosting-benchmark-results-table th:nth-child(3){width:10%;}.wp-hosting-benchmark-results-table th:nth-child(4){width:10%;}.wp-hosting-benchmark-results-table th:nth-child(5){width:9%;}.wp-hosting-benchmark-results-table th:nth-child(6){width:9%;}.wp-hosting-benchmark-results-table th:nth-child(7){width:14%;}.wp-hosting-benchmark-results-table th:nth-child(8){width:13%;}';
 		echo '.wp-hosting-benchmark-history-table{min-width:740px;}';
-		echo '.wp-hosting-benchmark-pill{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:#f0f0f1;}';
-		echo '.wp-hosting-benchmark-pill--success{background:#d1fae5;color:#065f46;}';
-		echo '.wp-hosting-benchmark-pill--failed{background:#fee2e2;color:#991b1b;}';
-		echo '.wp-hosting-benchmark-pill--unavailable{background:#fef3c7;color:#92400e;}';
-		echo '.wp-hosting-benchmark-pill--unknown{background:#e5e7eb;color:#374151;}';
+		echo '.wp-hosting-benchmark-pill{display:inline-block;padding:2px 6px;border:1px solid #dcdcde;background:#f6f7f7;font-size:12px;line-height:1.6;font-weight:600;}';
+		echo '.wp-hosting-benchmark-pill--success{border-color:#00a32a;color:#008a20;background:#f0fff4;}';
+		echo '.wp-hosting-benchmark-pill--failed{border-color:#d63638;color:#b32d2e;background:#fcf0f1;}';
+		echo '.wp-hosting-benchmark-pill--unavailable{border-color:#dba617;color:#8a6d00;background:#fcf9e8;}';
+		echo '.wp-hosting-benchmark-pill--unknown{color:#646970;}';
 		echo '.wp-hosting-benchmark-page form[aria-busy="true"] .button[disabled]{cursor:wait;opacity:.75;}';
 		echo '.wp-hosting-benchmark-page .notice{margin:0 0 18px;}';
-		echo '@container benchmark-shell (max-width:1180px){.wp-hosting-benchmark-dashboard{grid-template-columns:1fr;}.wp-hosting-benchmark-sidebar{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}}';
-		echo '@container benchmark-shell (max-width:860px){.wp-hosting-benchmark-summary-grid{grid-template-columns:1fr;}}';
-		echo '@container benchmark-shell (max-width:720px){.wp-hosting-benchmark-header{flex-direction:column;align-items:stretch;padding:24px;}.wp-hosting-benchmark-header-meta{min-width:0;}.wp-hosting-benchmark-summary-grid{grid-template-columns:1fr;}}';
-		echo '@container benchmark-shell (max-width:640px){.wp-hosting-benchmark-card{padding:20px;border-radius:20px;}.wp-hosting-benchmark-header h1{font-size:28px;}.wp-hosting-benchmark-verdict-title{font-size:24px;}.wp-hosting-benchmark-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}';
-		echo '@container benchmark-shell (max-width:460px){.wp-hosting-benchmark-stat-grid,.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{grid-template-columns:1fr;}.wp-hosting-benchmark-speedometer-value{font-size:48px;}}';
-		echo '@media (max-width:1280px){.wp-hosting-benchmark-dashboard{grid-template-columns:1fr;}.wp-hosting-benchmark-sidebar{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}}';
 		echo '@media (max-width:960px){.wp-hosting-benchmark-summary-grid{grid-template-columns:1fr;}}';
-		echo '@media (max-width:782px){.wp-hosting-benchmark-header{flex-direction:column;align-items:stretch;padding:24px;}.wp-hosting-benchmark-header-meta{min-width:0;}}';
-		echo '@media (max-width:782px){.wp-hosting-benchmark-results-table,.wp-hosting-benchmark-results-table thead,.wp-hosting-benchmark-results-table tbody,.wp-hosting-benchmark-results-table tr,.wp-hosting-benchmark-results-table td{display:block;width:100%;}.wp-hosting-benchmark-results-table thead{position:absolute;clip:rect(1px,1px,1px,1px);clip-path:inset(50%);height:1px;overflow:hidden;white-space:nowrap;width:1px;}.wp-hosting-benchmark-results-table tr{margin:0 0 12px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;overflow:hidden;}.wp-hosting-benchmark-results-table td{display:grid;grid-template-columns:minmax(110px,34%) minmax(0,1fr);gap:12px;align-items:start;padding:10px 12px;border-bottom:1px solid #eef2f7;}.wp-hosting-benchmark-results-table td:last-child{border-bottom:0;}.wp-hosting-benchmark-results-table td::before{content:attr(data-label);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;}}';
-		echo '@media (max-width:600px){.wp-hosting-benchmark-page{margin-right:0;}.wp-hosting-benchmark-card{padding:20px;border-radius:20px;}.wp-hosting-benchmark-header h1{font-size:28px;}.wp-hosting-benchmark-verdict-title{font-size:24px;}.wp-hosting-benchmark-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}';
-		echo '@media (max-width:480px){.wp-hosting-benchmark-stat-grid,.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{grid-template-columns:1fr;}.wp-hosting-benchmark-speedometer-value{font-size:48px;}}';
+		echo '@media (max-width:850px){.wp-hosting-benchmark-poststuff #post-body.columns-2{grid-template-columns:1fr;margin-right:0;}.wp-hosting-benchmark-poststuff #postbox-container-1{float:none;width:auto;margin-right:0;}}';
+		echo '@media (max-width:782px){.wp-hosting-benchmark-results-table,.wp-hosting-benchmark-results-table thead,.wp-hosting-benchmark-results-table tbody,.wp-hosting-benchmark-results-table tr,.wp-hosting-benchmark-results-table td{display:block;width:100%;}.wp-hosting-benchmark-results-table thead{position:absolute;clip:rect(1px,1px,1px,1px);clip-path:inset(50%);height:1px;overflow:hidden;white-space:nowrap;width:1px;}.wp-hosting-benchmark-results-table tr{margin:0 0 12px;border:1px solid #c3c4c7;background:#fff;overflow:hidden;}.wp-hosting-benchmark-results-table td{display:grid;grid-template-columns:minmax(110px,34%) minmax(0,1fr);gap:12px;align-items:start;padding:10px 12px;border-bottom:1px solid #dcdcde;}.wp-hosting-benchmark-results-table td:last-child{border-bottom:0;}.wp-hosting-benchmark-results-table td::before{content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;color:#646970;}}';
+		echo '@media (max-width:600px){.wp-hosting-benchmark-page{margin-right:0;}.wp-hosting-benchmark-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}';
+		echo '@media (max-width:480px){.wp-hosting-benchmark-stat-grid,.wp-hosting-benchmark-category-grid,.wp-hosting-benchmark-environment-grid{grid-template-columns:1fr;}}';
 		echo '</style>';
 
 		echo '<script>';
@@ -407,6 +427,7 @@ class Page {
 		echo 'var markBusy=function(form,label){var button=form.querySelector("button[type=submit]");form.setAttribute("aria-busy","true");if(button){button.disabled=true;button.textContent=label;}};';
 		echo 'var runForm=document.getElementById("wp-hosting-benchmark-run-form");';
 		echo 'if(runForm){runForm.addEventListener("submit",function(event){var intensity=document.getElementById("wp-hosting-benchmark-intensity");if(intensity&&"high"===intensity.value&&!window.confirm(' . wp_json_encode( $high_warning ) . ')){event.preventDefault();return;}markBusy(runForm,' . wp_json_encode( $running_label ) . ');});}';
+		echo 'document.querySelectorAll(".wp-hosting-benchmark-delete-form").forEach(function(deleteForm){deleteForm.addEventListener("submit",function(event){if(!window.confirm(' . wp_json_encode( $delete_warning ) . ')){event.preventDefault();return;}markBusy(deleteForm,' . wp_json_encode( $deleting_label ) . ');});});';
 		echo 'var clearForm=document.getElementById("wp-hosting-benchmark-clear-form");';
 		echo 'if(clearForm){clearForm.addEventListener("submit",function(event){if(!window.confirm(' . wp_json_encode( $clear_warning ) . ')){event.preventDefault();return;}markBusy(clearForm,' . wp_json_encode( $clearing_label ) . ');});}';
 		echo '});';
@@ -422,14 +443,15 @@ class Page {
 	protected function render_controls( $selected_run ) {
 		$levels = $this->runner->get_intensity_levels();
 
-		echo '<div class="card wp-hosting-benchmark-card">';
-		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Start a new run', 'wp-hosting-benchmark' ) . '</p>';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
+		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<h2>' . esc_html__( 'Run benchmark', 'wp-hosting-benchmark' ) . '</h2>';
+		echo '</div>';
 		echo '<p class="wp-hosting-benchmark-card-intro">' . esc_html__( 'Use Low for a quick health check, Standard for routine benchmarking, and High when you want a denser sample and can spare a slightly longer admin request.', 'wp-hosting-benchmark' ) . '</p>';
 		echo '<form id="wp-hosting-benchmark-run-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wp_hosting_benchmark_run" />';
 		wp_nonce_field( 'wp_hosting_benchmark_run' );
-		echo '<p><label for="wp-hosting-benchmark-intensity"><strong>' . esc_html__( 'Intensity', 'wp-hosting-benchmark' ) . '</strong></label></p>';
+		echo '<table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wp-hosting-benchmark-intensity">' . esc_html__( 'Intensity', 'wp-hosting-benchmark' ) . '</label></th><td>';
 		echo '<select id="wp-hosting-benchmark-intensity" class="wp-hosting-benchmark-select" name="intensity">';
 
 		foreach ( $levels as $key => $level ) {
@@ -437,6 +459,7 @@ class Page {
 		}
 
 		echo '</select>';
+		echo '</td></tr></tbody></table>';
 		echo '<ul class="wp-hosting-benchmark-guide-list">';
 		foreach ( $levels as $level ) {
 			echo '<li><strong>' . esc_html( $level['label'] ) . ':</strong> ' . esc_html( $level['description'] ) . '</li>';
@@ -446,9 +469,10 @@ class Page {
 		echo '</form>';
 		echo '</div>';
 
-		echo '<div class="card wp-hosting-benchmark-card">';
-		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Report actions', 'wp-hosting-benchmark' ) . '</p>';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
+		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<h2>' . esc_html__( 'Export or reset', 'wp-hosting-benchmark' ) . '</h2>';
+		echo '</div>';
 		echo '<p class="wp-hosting-benchmark-card-intro">' . esc_html__( 'Export the currently selected report as JSON, or clear stored history if you want to start a fresh measurement series.', 'wp-hosting-benchmark' ) . '</p>';
 
 		if ( $selected_run ) {
@@ -473,7 +497,7 @@ class Page {
 	 * @return void
 	 */
 	protected function render_summary( $run ) {
-		echo '<div class="card wp-hosting-benchmark-card wp-hosting-benchmark-summary-card">';
+		echo '<div class="postbox wp-hosting-benchmark-card wp-hosting-benchmark-summary-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<div>';
 		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Performance snapshot', 'wp-hosting-benchmark' ) . '</p>';
@@ -562,7 +586,7 @@ class Page {
 	 * @return void
 	 */
 	protected function render_interpretation_guide( $run ) {
-		echo '<div class="card wp-hosting-benchmark-card">';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<div>';
 		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Reading the results', 'wp-hosting-benchmark' ) . '</p>';
@@ -671,7 +695,7 @@ class Page {
 			),
 		);
 
-		echo '<div class="card wp-hosting-benchmark-card">';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<div>';
 		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Environment context', 'wp-hosting-benchmark' ) . '</p>';
@@ -695,7 +719,7 @@ class Page {
 	 * @return void
 	 */
 	protected function render_results( $run ) {
-		echo '<div class="card wp-hosting-benchmark-card">';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<div>';
 		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Deep dive', 'wp-hosting-benchmark' ) . '</p>';
@@ -743,7 +767,7 @@ class Page {
 	 * @return void
 	 */
 	protected function render_history( array $history, $selected_id ) {
-		echo '<div class="card wp-hosting-benchmark-card">';
+		echo '<div class="postbox wp-hosting-benchmark-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<div>';
 		echo '<p class="wp-hosting-benchmark-section-label">' . esc_html__( 'Compare runs', 'wp-hosting-benchmark' ) . '</p>';
@@ -770,7 +794,21 @@ class Page {
 			echo '<td>' . esc_html( number_format_i18n( (int) $run['scores']['overall'] ) ) . '</td>';
 			echo '<td>' . esc_html( number_format_i18n( (int) $run['scores']['confidence'] ) ) . '%</td>';
 			echo '<td>' . esc_html( sprintf( __( '%1$d success, %2$d failed, %3$d unavailable', 'wp-hosting-benchmark' ), (int) $run['summary']['success'], (int) $run['summary']['failed'], (int) $run['summary']['unavailable'] ) ) . '</td>';
-			echo '<td class="column-actions"><div class="wp-hosting-benchmark-actions"><a class="button button-small" href="' . esc_url( $this->get_page_url( array( 'benchmark_id' => $run['id'] ) ) ) . '" aria-label="' . esc_attr( sprintf( __( 'View benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'View', 'wp-hosting-benchmark' ) . '</a><a class="button button-small" href="' . esc_url( $this->get_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as JSON', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'Export', 'wp-hosting-benchmark' ) . '</a></div></td>';
+			echo '<td class="column-actions"><div class="wp-hosting-benchmark-actions">';
+			echo '<a class="button button-small" href="' . esc_url( $this->get_page_url( array( 'benchmark_id' => $run['id'] ) ) ) . '" aria-label="' . esc_attr( sprintf( __( 'View benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'View', 'wp-hosting-benchmark' ) . '</a>';
+			echo '<a class="button button-small" href="' . esc_url( $this->get_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as JSON', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'Export', 'wp-hosting-benchmark' ) . '</a>';
+			echo '<form class="wp-hosting-benchmark-delete-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			echo '<input type="hidden" name="action" value="wp_hosting_benchmark_delete_run" />';
+			echo '<input type="hidden" name="benchmark_id" value="' . esc_attr( $run['id'] ) . '" />';
+
+			if ( $selected_id ) {
+				echo '<input type="hidden" name="redirect_benchmark_id" value="' . esc_attr( $selected_id ) . '" />';
+			}
+
+			wp_nonce_field( 'wp_hosting_benchmark_delete_run_' . $run['id'] );
+			echo '<button type="submit" class="button button-small button-link-delete" aria-label="' . esc_attr( sprintf( __( 'Delete benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'Delete', 'wp-hosting-benchmark' ) . '</button>';
+			echo '</form>';
+			echo '</div></td>';
 			echo '</tr>';
 		}
 

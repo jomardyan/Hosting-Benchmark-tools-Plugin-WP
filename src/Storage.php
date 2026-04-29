@@ -124,6 +124,43 @@ class Storage {
 	}
 
 	/**
+	 * Delete one benchmark run from history.
+	 *
+	 * @param string $run_id Run ID.
+	 * @return bool
+	 */
+	public function delete_run( $run_id ) {
+		$run_id = sanitize_text_field( (string) $run_id );
+
+		if ( '' === $run_id ) {
+			return false;
+		}
+
+		$history = $this->read_history();
+		$updated = array();
+		$deleted = false;
+
+		foreach ( $history as $run ) {
+			if ( isset( $run['id'] ) && $run_id === $run['id'] ) {
+				$deleted = true;
+				continue;
+			}
+
+			$updated[] = $run;
+		}
+
+		if ( ! $deleted ) {
+			return false;
+		}
+
+		if ( false === update_option( self::HISTORY_OPTION, array_values( $updated ), false ) ) {
+			throw new \RuntimeException( __( 'The selected benchmark run could not be deleted.', 'wp-hosting-benchmark' ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Clear benchmark history.
 	 *
 	 * @return void
