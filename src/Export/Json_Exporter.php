@@ -70,7 +70,7 @@ class Json_Exporter {
 
 			nocache_headers();
 			header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
-			header( 'Content-Disposition: attachment; filename=' . $filename );
+			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 			header( 'X-Content-Type-Options: nosniff' );
 			echo $payload;
 			exit;

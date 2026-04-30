@@ -443,6 +443,12 @@ class Page {
 	protected function render_controls( $selected_run ) {
 		$levels = $this->runner->get_intensity_levels();
 
+		$current_intensity = is_array( $selected_run ) && ! empty( $selected_run['intensity'] ) ? sanitize_key( (string) $selected_run['intensity'] ) : 'standard';
+
+		if ( ! isset( $levels[ $current_intensity ] ) ) {
+			$current_intensity = 'standard';
+		}
+
 		echo '<div class="postbox wp-hosting-benchmark-card">';
 		echo '<div class="wp-hosting-benchmark-card-header">';
 		echo '<h2>' . esc_html__( 'Run benchmark', 'wp-hosting-benchmark' ) . '</h2>';
@@ -455,7 +461,7 @@ class Page {
 		echo '<select id="wp-hosting-benchmark-intensity" class="wp-hosting-benchmark-select" name="intensity">';
 
 		foreach ( $levels as $key => $level ) {
-			echo '<option value="' . esc_attr( $key ) . '" ' . selected( 'standard', $key, false ) . '>' . esc_html( $level['label'] ) . '</option>';
+			echo '<option value="' . esc_attr( $key ) . '" ' . selected( $current_intensity, $key, false ) . '>' . esc_html( $level['label'] ) . '</option>';
 		}
 
 		echo '</select>';

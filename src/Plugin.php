@@ -76,11 +76,22 @@ class Plugin {
 	 */
 	public function maybe_upgrade() {
 		try {
-			if ( Storage::SCHEMA_VERSION !== get_option( Storage::SCHEMA_OPTION ) ) {
+			$schema_changed = Storage::SCHEMA_VERSION !== get_option( Storage::SCHEMA_OPTION );
+
+			if ( $schema_changed ) {
 				Storage::install();
 			}
 
-			$this->storage->cleanup_temporary_records();
+			/*
+			 * Throttle the temporary-record sweep so it does not run a
+			 * `DELETE ... LIKE` query against the options table on every
+			 * single admin page load. Run it once on schema upgrades and
+			 * at most once per day otherwise.
+			 */
+			if ( $schema_changed || false === get_transient( Storage::CLEANUP_TRANSIENT ) ) {
+				$this->storage->cleanup_temporary_records();
+				set_transient( Storage::CLEANUP_TRANSIENT, 1, DAY_IN_SECONDS );
+			}
 		} catch ( \Throwable $throwable ) {
 			$this->report_background_error( $throwable );
 		}

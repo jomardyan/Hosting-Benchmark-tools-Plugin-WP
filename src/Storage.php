@@ -36,6 +36,11 @@ class Storage {
 	const NOTICE_TRANSIENT_PREFIX = 'wp_hosting_benchmark_notice_';
 
 	/**
+	 * Throttle key for the daily temporary-record cleanup sweep.
+	 */
+	const CLEANUP_TRANSIENT = 'wp_hosting_benchmark_cleanup_throttle';
+
+	/**
 	 * Install storage options.
 	 *
 	 * @return void
@@ -172,6 +177,7 @@ class Storage {
 			throw new \RuntimeException( __( 'The stored benchmark history could not be cleared.', 'wp-hosting-benchmark' ) );
 		}
 
+		delete_transient( self::CLEANUP_TRANSIENT );
 		$this->cleanup_temporary_records();
 	}
 
@@ -190,7 +196,7 @@ class Storage {
 			array(
 				'option_name'  => $option_name,
 				'option_value' => $option_value,
-				'autoload'     => 'no',
+				'autoload'     => 'off',
 			),
 			array( '%s', '%s', '%s' )
 		);
