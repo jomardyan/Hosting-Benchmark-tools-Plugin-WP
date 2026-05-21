@@ -66,15 +66,19 @@ class Scorer {
 	 * - metrics better than excellent are clamped to 100, and worse than poor are
 	 *   clamped to 0;
 	 * - category scores are the average of their available metric scores;
-	 * - the overall score is the weighted average of the category scores.
+	 * - the overall score blends the category weighted average with a dedicated
+	 *   total-runtime score so end-to-end request time materially impacts
+	 *   comparisons between hosts.
 	 *
 	 * Confidence is tracked separately so optional or unavailable tests can lower
 	 * the trust in the overall result without crashing the plugin.
 	 *
-	 * @param array $results Benchmark results.
+	 * @param array       $results           Benchmark results.
+	 * @param float|null  $total_duration_ms Total benchmark request duration in milliseconds.
+	 * @param string      $intensity         Intensity level used for the run.
 	 * @return array
 	 */
-	public function score_results( array $results ) {
+	public function score_results( array $results, $total_duration_ms = null, $intensity = 'standard' ) {
 		$categories          = $this->get_categories();
 		$category_scores     = array();
 		$planned_confidence  = 0.0;
@@ -123,11 +127,75 @@ class Scorer {
 			}
 		}
 
+		$base_overall         = $total_weight > 0 ? (int) round( $weighted_total / $total_weight ) : 0;
+		$runtime_score        = $this->score_total_runtime( $total_duration_ms, $intensity );
+		$runtime_weight       = 45;
+		$category_weight      = 100 - $runtime_weight;
+		$overall              = $base_overall;
+
+		if ( null !== $runtime_score ) {
+			$overall = (int) round( ( $base_overall * $category_weight + $runtime_score * $runtime_weight ) / 100 );
+		}
+
 		return array(
-			'overall'    => $total_weight > 0 ? (int) round( $weighted_total / $total_weight ) : 0,
+			'overall'         => $overall,
+			'base_overall'    => $base_overall,
+			'runtime_score'   => null === $runtime_score ? null : round( $runtime_score, 2 ),
+			'runtime_weight'  => $runtime_weight,
 			'confidence' => $planned_confidence > 0 ? (int) round( ( $earned_confidence / $planned_confidence ) * 100 ) : 100,
 			'categories' => $category_scores,
 		);
+	}
+
+	/**
+	 * Score total runtime using intensity-aware thresholds.
+	 *
+	 * @param float|null $total_duration_ms Total duration in milliseconds.
+	 * @param string     $intensity         Intensity key.
+	 * @return float|null
+	 */
+	protected function score_total_runtime( $total_duration_ms, $intensity ) {
+		if ( ! is_numeric( $total_duration_ms ) || (float) $total_duration_ms <= 0 ) {
+			return null;
+		}
+
+		$thresholds = $this->get_runtime_thresholds( $intensity );
+
+		return $this->score_single_metric(
+			array(
+				'value'            => (float) $total_duration_ms,
+				'poor'             => (float) $thresholds['poor'],
+				'excellent'        => (float) $thresholds['excellent'],
+				'higher_is_better' => false,
+			)
+		);
+	}
+
+	/**
+	 * Runtime thresholds by intensity profile.
+	 *
+	 * @param string $intensity Intensity key.
+	 * @return array
+	 */
+	protected function get_runtime_thresholds( $intensity ) {
+		$thresholds = array(
+			'low'      => array(
+				'excellent' => 350,
+				'poor'      => 8000,
+			),
+			'standard' => array(
+				'excellent' => 600,
+				'poor'      => 12000,
+			),
+			'high'     => array(
+				'excellent' => 900,
+				'poor'      => 20000,
+			),
+		);
+
+		$intensity = sanitize_key( (string) $intensity );
+
+		return isset( $thresholds[ $intensity ] ) ? $thresholds[ $intensity ] : $thresholds['standard'];
 	}
 
 	/**

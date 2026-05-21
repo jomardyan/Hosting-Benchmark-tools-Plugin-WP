@@ -1,0 +1,417 @@
+{
+    "id": "9673ba91-2d5f-4aee-ab9e-22bf65842f15",
+    "intensity": "high",
+    "created_at": "2026-05-21 11:48:56",
+    "environment": {
+        "php_version": "8.3.31",
+        "wordpress_version": "7.0",
+        "database_version": "10.11.16",
+        "object_cache_enabled": "",
+        "object_cache_status": "No persistent object cache detected",
+        "memory_limit": "40M",
+        "max_execution_time": "300",
+        "server_software": "Apache"
+    },
+    "results": [
+        {
+            "slug": "php_execution",
+            "label": "PHP execution speed",
+            "category": "php_cpu",
+            "category_label": "PHP and CPU",
+            "duration_ms": 27.747,
+            "operations": 200000,
+            "ops_per_second": 7207946.38,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 7207946.38,
+            "metric_unit": "ops/s",
+            "details": {
+                "checksum": 304936
+            },
+            "scoring": {
+                "value": 7207946.382539955,
+                "poor": 100000,
+                "excellent": 1200000,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "cpu_calculation",
+            "label": "CPU calculation speed",
+            "category": "php_cpu",
+            "category_label": "PHP and CPU",
+            "duration_ms": 19.826,
+            "operations": 100000,
+            "ops_per_second": 5043837.56,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 5043837.56,
+            "metric_unit": "ops/s",
+            "details": {
+                "checksum": -1177.524011
+            },
+            "scoring": {
+                "value": 5043837.560277548,
+                "poor": 20000,
+                "excellent": 250000,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "memory_allocation",
+            "label": "Memory allocation speed",
+            "category": "php_cpu",
+            "category_label": "PHP and CPU",
+            "duration_ms": 17.596,
+            "operations": 600,
+            "ops_per_second": 34098.65,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 272789.17,
+            "metric_unit": "KiB/s",
+            "details": {
+                "bytes_allocated": 4915200,
+                "checksum": 4915200
+            },
+            "scoring": {
+                "value": 272789.1711719036,
+                "poor": 512,
+                "excellent": 8192,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "database_read",
+            "label": "WordPress database read speed",
+            "category": "database",
+            "category_label": "Database",
+            "duration_ms": 9.814,
+            "operations": 60,
+            "ops_per_second": 6113.7,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 6113.7,
+            "metric_unit": "ops/s",
+            "details": {
+                "last_value_length": 21
+            },
+            "scoring": {
+                "value": 6113.700167626266,
+                "poor": 50,
+                "excellent": 1000,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "database_write",
+            "label": "WordPress database write speed",
+            "category": "database",
+            "category_label": "Database",
+            "duration_ms": 24.408,
+            "operations": 30,
+            "ops_per_second": 1229.1,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 1229.1,
+            "metric_unit": "ops/s",
+            "details": {
+                "rows_written": 30
+            },
+            "scoring": {
+                "value": 1229.1000732600733,
+                "poor": 10,
+                "excellent": 200,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "autoloaded_options",
+            "label": "Autoloaded options footprint",
+            "category": "database",
+            "category_label": "Database",
+            "duration_ms": 2.095,
+            "operations": 1,
+            "ops_per_second": null,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Autoloaded data",
+            "metric_value": 502.52,
+            "metric_unit": "KiB",
+            "details": {
+                "autoloaded_option_count": 806,
+                "total_bytes": 514582
+            },
+            "scoring": {
+                "value": 502.521484375,
+                "poor": 1024,
+                "excellent": 256,
+                "higher_is_better": false,
+                "optional": false
+            }
+        },
+        {
+            "slug": "filesystem",
+            "label": "Filesystem write and read speed",
+            "category": "filesystem",
+            "category_label": "Filesystem",
+            "duration_ms": 6.186,
+            "operations": 20,
+            "ops_per_second": 3233.1,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 206918.57,
+            "metric_unit": "KiB/s",
+            "details": {
+                "file_size": 65536,
+                "iterations": 10
+            },
+            "scoring": {
+                "value": 206918.56625298696,
+                "poor": 256,
+                "excellent": 12288,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "object_cache",
+            "label": "Object cache performance",
+            "category": "cache",
+            "category_label": "Cache",
+            "duration_ms": 0,
+            "operations": 0,
+            "ops_per_second": null,
+            "status": "unavailable",
+            "optional": true,
+            "error_message": "No persistent object cache drop-in is active.",
+            "metric_label": "",
+            "metric_value": null,
+            "metric_unit": "",
+            "details": [],
+            "scoring": []
+        },
+        {
+            "slug": "transients",
+            "label": "Transient API performance",
+            "category": "cache",
+            "category_label": "Cache",
+            "duration_ms": 242.102,
+            "operations": 160,
+            "ops_per_second": 660.88,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Throughput",
+            "metric_value": 660.88,
+            "metric_unit": "ops/s",
+            "details": [],
+            "scoring": {
+                "value": 660.8780737604018,
+                "poor": 20,
+                "excellent": 400,
+                "higher_is_better": true,
+                "optional": false
+            }
+        },
+        {
+            "slug": "content_query",
+            "label": "Real-world content query performance",
+            "category": "application",
+            "category_label": "Real-world WordPress",
+            "duration_ms": 11.17,
+            "operations": 12,
+            "ops_per_second": 1074.29,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Average query latency",
+            "metric_value": 0.93,
+            "metric_unit": "ms",
+            "details": {
+                "post_types": "post, e-floating-buttons, elementor_library, woodmart_layout, wd_product_tabs, wd_popup, wd_floating_block, cms_block, woodmart_slide, portfolio, product",
+                "posts_returned": 60,
+                "page_size": 5
+            },
+            "scoring": {
+                "value": 0.9308457374572754,
+                "poor": 250,
+                "excellent": 40,
+                "higher_is_better": false,
+                "optional": false
+            }
+        },
+        {
+            "slug": "rest_posts_latency",
+            "label": "REST posts collection latency",
+            "category": "application",
+            "category_label": "Real-world WordPress",
+            "duration_ms": 11532.837,
+            "operations": 3,
+            "ops_per_second": 0.26,
+            "status": "success",
+            "optional": true,
+            "error_message": "",
+            "metric_label": "Average latency",
+            "metric_value": 3844.28,
+            "metric_unit": "ms",
+            "details": {
+                "requests": 3,
+                "items_returned": 15
+            },
+            "scoring": {
+                "value": 3844.2790508270264,
+                "poor": 1500,
+                "excellent": 200,
+                "higher_is_better": false,
+                "optional": true
+            }
+        },
+        {
+            "slug": "loopback_latency",
+            "label": "HTTP loopback request latency",
+            "category": "network",
+            "category_label": "Network loopback",
+            "duration_ms": 3746.325,
+            "operations": 1,
+            "ops_per_second": null,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Latency",
+            "metric_value": 3746.32,
+            "metric_unit": "ms",
+            "details": {
+                "http_code": 200
+            },
+            "scoring": {
+                "value": 3746.3247776031494,
+                "poor": 1200,
+                "excellent": 150,
+                "higher_is_better": false,
+                "optional": false
+            }
+        },
+        {
+            "slug": "bootstrap_timing",
+            "label": "Basic WordPress bootstrap timing",
+            "category": "network",
+            "category_label": "Network loopback",
+            "duration_ms": 2748.317,
+            "operations": 1,
+            "ops_per_second": null,
+            "status": "success",
+            "optional": false,
+            "error_message": "",
+            "metric_label": "Bootstrap",
+            "metric_value": 2680.65,
+            "metric_unit": "ms",
+            "details": {
+                "loopback_duration_ms": 2748.317003250122
+            },
+            "scoring": {
+                "value": 2680.653,
+                "poor": 700,
+                "excellent": 80,
+                "higher_is_better": false,
+                "optional": false
+            }
+        }
+    ],
+    "scores": {
+        "overall": 75,
+        "confidence": 97,
+        "categories": {
+            "php_cpu": {
+                "label": "PHP and CPU",
+                "weight": 25,
+                "score": 100,
+                "test_scores": [
+                    100,
+                    100,
+                    100
+                ],
+                "test_count": 3
+            },
+            "database": {
+                "label": "Database",
+                "weight": 25,
+                "score": 89,
+                "test_scores": [
+                    100,
+                    100,
+                    67.90084838867188
+                ],
+                "test_count": 3
+            },
+            "filesystem": {
+                "label": "Filesystem",
+                "weight": 10,
+                "score": 100,
+                "test_scores": [
+                    100
+                ],
+                "test_count": 1
+            },
+            "cache": {
+                "label": "Cache",
+                "weight": 10,
+                "score": 100,
+                "test_scores": [
+                    100
+                ],
+                "test_count": 2
+            },
+            "network": {
+                "label": "Network loopback",
+                "weight": 15,
+                "score": 0,
+                "test_scores": [
+                    0,
+                    0
+                ],
+                "test_count": 2
+            },
+            "application": {
+                "label": "Real-world WordPress",
+                "weight": 15,
+                "score": 50,
+                "test_scores": [
+                    100,
+                    0
+                ],
+                "test_count": 2
+            }
+        }
+    },
+    "recommendations": [
+        "Loopback or bootstrap timing is slow. Check local DNS, HTTPS configuration, and server-level loopback support.",
+        "Real-world WordPress request handling is modest. Review heavy theme logic, archive queries, and REST API filters or middleware.",
+        "No persistent object cache was detected. Redis or Memcached can improve WordPress admin, cache, and transient-heavy workloads.",
+        "Object cache performance reported: No persistent object cache drop-in is active."
+    ],
+    "summary": {
+        "success": 12,
+        "failed": 0,
+        "unavailable": 1,
+        "elapsed_ms": 18389.656
+    },
+    "total_duration": 18389.668
+}

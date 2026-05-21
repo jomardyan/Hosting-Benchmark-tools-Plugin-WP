@@ -520,6 +520,9 @@ class Page {
 		}
 
 		$overall_score = isset( $run['scores']['overall'] ) ? (int) $run['scores']['overall'] : 0;
+		$base_overall  = isset( $run['scores']['base_overall'] ) ? (int) $run['scores']['base_overall'] : $overall_score;
+		$runtime_score = isset( $run['scores']['runtime_score'] ) && is_numeric( $run['scores']['runtime_score'] ) ? (float) $run['scores']['runtime_score'] : null;
+		$runtime_weight = isset( $run['scores']['runtime_weight'] ) ? (int) $run['scores']['runtime_weight'] : 45;
 		$confidence    = isset( $run['scores']['confidence'] ) ? (int) $run['scores']['confidence'] : 0;
 		$verdict       = $this->get_final_verdict( $run );
 		$weakest       = $this->get_weakest_category( $run );
@@ -542,6 +545,7 @@ class Page {
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Confidence', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( number_format_i18n( $confidence ) ) . '%</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( $this->get_confidence_interpretation( $confidence ) ) . '</span></div>';
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Intensity', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( $this->get_intensity_label( $run['intensity'] ) ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html__( 'Benchmark profile used for this run', 'wp-hosting-benchmark' ) . '</span></div>';
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Total runtime', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( number_format_i18n( (float) $run['total_duration'], 2 ) ) . ' ' . esc_html__( 'ms', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html__( 'Total request time spent on the benchmark', 'wp-hosting-benchmark' ) . '</span></div>';
+		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Runtime impact', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( null === $runtime_score ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( $runtime_score, 1 ) . '/100' ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( sprintf( __( 'End-to-end runtime contributes %d%% of the overall score', 'wp-hosting-benchmark' ), $runtime_weight ) ) . '</span></div>';
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Watch area', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( $weakest ? $weakest['label'] : __( 'Balanced', 'wp-hosting-benchmark' ) ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( $weakest ? sprintf( __( 'Lowest measured category at %d/100', 'wp-hosting-benchmark' ), (int) $weakest['score'] ) : __( 'No weak measured category detected', 'wp-hosting-benchmark' ) ) . '</span></div>';
 		echo '</div>';
 		echo '<div class="wp-hosting-benchmark-result-breakdown">';
@@ -572,7 +576,7 @@ class Page {
 
 			echo '</div>';
 		}
-		echo '<p class="description">' . esc_html__( 'The overall score is a weighted average of these categories. Database, PHP/CPU, and real request-path checks usually shape the final verdict most strongly.', 'wp-hosting-benchmark' ) . '</p>';
+		echo '<p class="description">' . esc_html( sprintf( __( 'Category scores form %1$d%% of the overall score (base score: %2$d/100). Total runtime contributes the remaining %3$d%%, so very slow end-to-end runs are penalized even when individual tests look strong.', 'wp-hosting-benchmark' ), max( 0, 100 - $runtime_weight ), $base_overall, $runtime_weight ) ) . '</p>';
 
 		if ( ! empty( $run['recommendations'] ) ) {
 			echo '<h3>' . esc_html__( 'Recommendations', 'wp-hosting-benchmark' ) . '</h3><ul>';
@@ -603,7 +607,7 @@ class Page {
 
 		if ( $run ) {
 			$current_reading = sprintf(
-				__( 'Current reading: %1$s overall with %2$s confidence.', 'wp-hosting-benchmark' ),
+				__( 'Current reading: %1$s overall with %2$s confidence. Overall now blends category quality with total runtime impact.', 'wp-hosting-benchmark' ),
 				$this->get_score_interpretation( (int) $run['scores']['overall'] ),
 				$this->get_confidence_interpretation( (int) $run['scores']['confidence'] )
 			);

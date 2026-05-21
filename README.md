@@ -104,7 +104,8 @@ The scoring model is intentionally transparent.
 - Better-than-excellent values clamp at 100.
 - Worse-than-poor values clamp at 0.
 - Category scores are averages of their available test scores.
-- Overall score is a weighted average of category scores.
+- Category quality contributes 55% of the overall score.
+- Total benchmark runtime contributes 45% of the overall score, using intensity-aware thresholds so slow end-to-end runs are penalized directly.
 - Confidence is tracked separately so optional or unavailable tests reduce trust in the report without crashing the plugin.
 
 ### Category weights

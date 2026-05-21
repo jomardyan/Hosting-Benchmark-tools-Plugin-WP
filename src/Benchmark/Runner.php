@@ -115,7 +115,8 @@ class Runner {
 			}
 		}
 
-		$scores          = $this->scorer->score_results( $results );
+		$total_duration  = round( ( microtime( true ) - $benchmark_time ) * 1000, 3 );
+		$scores          = $this->scorer->score_results( $results, $total_duration, $intensity );
 		$recommendations = $this->build_recommendations( $results, $scores );
 		$summary         = $this->summarize_results( $results, $guard );
 		$run             = array(
@@ -126,7 +127,7 @@ class Runner {
 			'scores'          => $scores,
 			'recommendations' => $recommendations,
 			'summary'         => $summary,
-			'total_duration'  => round( ( microtime( true ) - $benchmark_time ) * 1000, 3 ),
+			'total_duration'  => $total_duration,
 		);
 
 		$run['id'] = $this->storage->save_run( $run );
