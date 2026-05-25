@@ -1,0 +1,293 @@
+<?php
+/**
+ * Main plugin coordinator.
+ *
+ * @package WPHostingBenchmark
+ */
+
+namespace WPHostingBenchmark;
+
+use WPHostingBenchmark\Admin\Page;
+use WPHostingBenchmark\Admin\Settings_Page;
+use WPHostingBenchmark\Admin\Compare_Page;
+use WPHostingBenchmark\Benchmark\Runner;
+use WPHostingBenchmark\Benchmark\Scorer;
+use WPHostingBenchmark\CLI\Command as CLI_Command;
+use WPHostingBenchmark\Export\Csv_Exporter;
+use WPHostingBenchmark\Export\Json_Exporter;
+use WPHostingBenchmark\Health\Site_Health;
+use WPHostingBenchmark\Schedule\Cron;
+
+defined( 'ABSPATH' ) || exit;
+
+class Plugin {
+	/**
+	 * Result storage.
+	 *
+	 * @var Storage
+	 */
+	protected $storage;
+
+	/**
+	 * Benchmark runner.
+	 *
+	 * @var Runner
+	 */
+	protected $runner;
+
+	/**
+	 * Admin page.
+	 *
+	 * @var Page
+	 */
+	protected $page;
+
+	/**
+	 * Export handler.
+	 *
+	 * @var Json_Exporter
+	 */
+	protected $exporter;
+
+	/**
+	 * CSV export handler.
+	 *
+	 * @var Csv_Exporter
+	 */
+	protected $csv_exporter;
+
+	/**
+	 * Settings admin page.
+	 *
+	 * @var Settings_Page
+	 */
+	protected $settings_page;
+
+	/**
+	 * Compare admin page.
+	 *
+	 * @var Compare_Page
+	 */
+	protected $compare_page;
+
+	/**
+	 * Scheduled benchmark coordinator.
+	 *
+	 * @var Cron
+	 */
+	protected $cron;
+
+	/**
+	 * Site Health integration.
+	 *
+	 * @var Site_Health
+	 */
+	protected $site_health;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->storage       = new Storage();
+		$this->runner        = new Runner( $this->storage, new Scorer() );
+		$this->page          = new Page( $this->runner, $this->storage );
+		$this->exporter      = new Json_Exporter( $this->storage );
+		$this->csv_exporter  = new Csv_Exporter( $this->storage );
+		$this->settings_page = new Settings_Page();
+		$this->compare_page  = new Compare_Page( $this->storage );
+		$this->cron          = new Cron( $this->runner );
+		$this->site_health   = new Site_Health( $this->storage );
+	}
+
+	/**
+	 * Get the benchmark runner.
+	 *
+	 * @return Runner
+	 */
+	public function get_runner() {
+		return $this->runner;
+	}
+
+	/**
+	 * Get the result storage.
+	 *
+	 * @return Storage
+	 */
+	public function get_storage() {
+		return $this->storage;
+	}
+
+	/**
+	 * Register runtime hooks.
+	 *
+	 * @return void
+	 */
+	public function run() {
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'admin_init', array( $this, 'maybe_upgrade' ) );
+		add_action( 'admin_post_wp_hosting_benchmark_bootstrap_probe', array( $this, 'handle_bootstrap_probe' ) );
+
+		$this->cron->register();
+		$this->site_health->register();
+
+		if ( is_admin() ) {
+			$this->page->register();
+			$this->settings_page->register();
+			$this->compare_page->register();
+			$this->exporter->register();
+			$this->csv_exporter->register();
+		}
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			CLI_Command::register( $this->runner, $this->storage );
+		}
+	}
+
+	/**
+	 * Ensure options are installed and stale temp records are cleaned up.
+	 *
+	 * @return void
+	 */
+	public function maybe_upgrade() {
+		try {
+			$schema_changed = Storage::SCHEMA_VERSION !== get_option( Storage::SCHEMA_OPTION );
+
+			if ( $schema_changed ) {
+				Storage::install();
+			}
+
+			/*
+			 * Throttle the temporary-record sweep so it does not run a
+			 * `DELETE ... LIKE` query against the options table on every
+			 * single admin page load. Run it once on schema upgrades and
+			 * at most once per day otherwise.
+			 */
+			if ( $schema_changed || false === get_transient( Storage::CLEANUP_TRANSIENT ) ) {
+				$this->storage->cleanup_temporary_records();
+				set_transient( Storage::CLEANUP_TRANSIENT, 1, DAY_IN_SECONDS );
+			}
+		} catch ( \Throwable $throwable ) {
+			$this->report_background_error( $throwable );
+		}
+	}
+
+	/**
+	 * Load translation files.
+	 *
+	 * @return void
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain( 'wp-hosting-benchmark', false, dirname( plugin_basename( WP_HOSTING_BENCHMARK_FILE ) ) . '/languages' );
+	}
+
+	/**
+	 * Respond to the internal admin-only bootstrap probe.
+	 *
+	 * @return void
+	 */
+	public function handle_bootstrap_probe() {
+		try {
+			$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : 'GET';
+
+			if ( 'POST' !== $method ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'The bootstrap probe only accepts POST requests.', 'wp-hosting-benchmark' ),
+					),
+					405
+				);
+			}
+
+			$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+
+			if ( ! wp_verify_nonce( $nonce, 'wp_hosting_benchmark_bootstrap_probe' ) ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'The bootstrap probe nonce is invalid.', 'wp-hosting-benchmark' ),
+					),
+					403
+				);
+			}
+
+			if ( ! current_user_can( Page::CAPABILITY ) ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'You do not have permission to run bootstrap probes.', 'wp-hosting-benchmark' ),
+					),
+					403
+				);
+			}
+
+			wp_send_json_success(
+				array(
+					'bootstrap_ms' => round( (float) timer_stop( 0, 6 ) * 1000, 3 ),
+				)
+			);
+		} catch ( \Throwable $throwable ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'The bootstrap probe failed unexpectedly.', 'wp-hosting-benchmark' ),
+					'details' => sanitize_text_field( $throwable->getMessage() ),
+				),
+				500
+			);
+		}
+	}
+
+	/**
+	 * Activation callback.
+	 *
+	 * On multisite, schema installation runs only for the current site. Network
+	 * administrators should activate per-site to install the option on each
+	 * site that needs benchmark history.
+	 *
+	 * @return void
+	 */
+	public static function activate() {
+		try {
+			Storage::install();
+		} catch ( \Throwable $throwable ) {
+			wp_die( esc_html( sanitize_text_field( $throwable->getMessage() ) ) );
+		}
+	}
+
+	/**
+	 * Deactivation callback.
+	 *
+	 * @return void
+	 */
+	public static function deactivate() {
+		try {
+			$storage = new Storage();
+			$storage->cleanup_temporary_records();
+			Cron::clear_all_events();
+		} catch ( \Throwable $throwable ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'WP Hosting Benchmark deactivation cleanup failed: ' . sanitize_text_field( $throwable->getMessage() ) );
+			}
+		}
+	}
+
+	/**
+	 * Record a background admin-side error without fatally breaking the page.
+	 *
+	 * @param \Throwable $throwable Throwable instance.
+	 * @return void
+	 */
+	protected function report_background_error( \Throwable $throwable ) {
+		if ( is_admin() && current_user_can( Page::CAPABILITY ) ) {
+			set_transient(
+				Storage::NOTICE_TRANSIENT_PREFIX . get_current_user_id(),
+				array(
+					'type'    => 'error',
+					'message' => sanitize_text_field( $throwable->getMessage() ),
+				),
+				MINUTE_IN_SECONDS
+			);
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'WP Hosting Benchmark background error: ' . sanitize_text_field( $throwable->getMessage() ) );
+		}
+	}
+}
