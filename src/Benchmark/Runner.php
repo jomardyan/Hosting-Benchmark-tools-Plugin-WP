@@ -79,7 +79,7 @@ class Runner {
 		$intensity      = $this->normalize_intensity( $intensity );
 		$profile        = $this->get_intensity_profile( $intensity );
 		$guard          = new Time_Guard();
-		$tests          = $this->get_tests();
+		$tests          = $this->get_active_tests();
 		$results        = array();
 		$environment    = $this->get_environment_details();
 		$benchmark_time = microtime( true );
@@ -1031,6 +1031,43 @@ class Runner {
 		);
 
 		return $profiles[ $intensity ];
+	}
+
+	/**
+	 * Get all benchmark tests (full registry).
+	 *
+	 * @return array
+	 */
+	public function get_all_tests() {
+		return $this->get_tests();
+	}
+
+	/**
+	 * Get the tests that should run given current settings.
+	 *
+	 * Tests listed in the `disabled_tests` setting are removed. Tests required
+	 * for category scoring may be retained; we still allow the user to disable
+	 * any test slug — the scorer treats missing tests as unavailable.
+	 *
+	 * @return array
+	 */
+	public function get_active_tests() {
+		$tests    = $this->get_tests();
+		$settings = \WPHostingBenchmark\Storage::get_settings();
+		$disabled = isset( $settings['disabled_tests'] ) && is_array( $settings['disabled_tests'] ) ? $settings['disabled_tests'] : array();
+
+		if ( empty( $disabled ) ) {
+			return $tests;
+		}
+
+		return array_values(
+			array_filter(
+				$tests,
+				static function ( $test ) use ( $disabled ) {
+					return ! in_array( $test['slug'], $disabled, true );
+				}
+			)
+		);
 	}
 
 	/**

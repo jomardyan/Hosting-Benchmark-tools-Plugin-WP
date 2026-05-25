@@ -28,12 +28,54 @@ class Storage {
 	/**
 	 * Maximum number of runs retained in history.
 	 */
-	const MAX_HISTORY = 20;
+	const MAX_HISTORY = 50;
 
 	/**
 	 * Run notice transient key prefix.
 	 */
 	const NOTICE_TRANSIENT_PREFIX = 'wp_hosting_benchmark_notice_';
+
+	/**
+	 * Plugin settings option name.
+	 */
+	const SETTINGS_OPTION = 'wp_hosting_benchmark_settings';
+
+	/**
+	 * Default plugin settings.
+	 *
+	 * @return array
+	 */
+	public static function get_default_settings() {
+		return array(
+			'default_intensity' => 'standard',
+			'history_limit'     => self::MAX_HISTORY,
+			'disabled_tests'    => array(),
+			'schedule'          => 'disabled',
+		);
+	}
+
+	/**
+	 * Get sanitized plugin settings.
+	 *
+	 * @return array
+	 */
+	public static function get_settings() {
+		$stored   = get_option( self::SETTINGS_OPTION, array() );
+		$defaults = self::get_default_settings();
+
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+
+		$settings = array_merge( $defaults, $stored );
+
+		$settings['default_intensity'] = in_array( $settings['default_intensity'], array( 'low', 'standard', 'high' ), true ) ? $settings['default_intensity'] : 'standard';
+		$settings['history_limit']     = max( 1, min( 200, (int) $settings['history_limit'] ) );
+		$settings['disabled_tests']    = is_array( $settings['disabled_tests'] ) ? array_values( array_unique( array_map( 'sanitize_key', $settings['disabled_tests'] ) ) ) : array();
+		$settings['schedule']          = in_array( $settings['schedule'], array( 'disabled', 'daily', 'weekly' ), true ) ? $settings['schedule'] : 'disabled';
+
+		return $settings;
+	}
 
 	/**
 	 * Throttle key for the daily temporary-record cleanup sweep.
@@ -78,13 +120,56 @@ class Storage {
 		}
 
 		array_unshift( $history, $run );
-		$history = array_values( array_slice( $history, 0, self::MAX_HISTORY ) );
+		$history = array_values( array_slice( $history, 0, $this->get_history_limit() ) );
 
-		if ( false === update_option( self::HISTORY_OPTION, $history, false ) ) {
-			throw new \RuntimeException( __( 'The benchmark results could not be saved to WordPress options.', 'wp-hosting-benchmark' ) );
+		if ( ! $this->save_history( $history ) ) {
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The benchmark results could not be saved to WordPress options.', 'wp-hosting-benchmark' ) ) );
 		}
 
 		return $run['id'];
+	}
+
+	/**
+	 * Get the configured maximum history size.
+	 *
+	 * Filterable via `wp_hosting_benchmark_history_limit` and configurable
+	 * through the plugin settings page.
+	 *
+	 * @return int
+	 */
+	public function get_history_limit() {
+		$settings = get_option( self::SETTINGS_OPTION, array() );
+		$limit    = is_array( $settings ) && isset( $settings['history_limit'] ) ? (int) $settings['history_limit'] : self::MAX_HISTORY;
+		$limit    = max( 1, min( 200, $limit ) );
+
+		/**
+		 * Filter the maximum number of benchmark runs retained in history.
+		 *
+		 * @param int $limit Maximum stored runs.
+		 */
+		return (int) apply_filters( 'wp_hosting_benchmark_history_limit', $limit );
+	}
+
+	/**
+	 * Persist the history option, ignoring "false because identical" returns.
+	 *
+	 * @param array $history Updated history.
+	 * @return bool True on success or no-op, false only on DB failure.
+	 */
+	protected function save_history( array $history ) {
+		global $wpdb;
+
+		$existing = get_option( self::HISTORY_OPTION, null );
+
+		if ( $existing === $history ) {
+			return true;
+		}
+
+		if ( false === update_option( self::HISTORY_OPTION, $history, false ) ) {
+			return empty( $wpdb->last_error );
+		}
+
+		return true;
 	}
 
 	/**
@@ -158,8 +243,8 @@ class Storage {
 			return false;
 		}
 
-		if ( false === update_option( self::HISTORY_OPTION, array_values( $updated ), false ) ) {
-			throw new \RuntimeException( __( 'The selected benchmark run could not be deleted.', 'wp-hosting-benchmark' ) );
+		if ( ! $this->save_history( array_values( $updated ) ) ) {
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The selected benchmark run could not be deleted.', 'wp-hosting-benchmark' ) ) );
 		}
 
 		return true;
@@ -173,8 +258,8 @@ class Storage {
 	public function clear_history() {
 		$history = $this->read_history();
 
-		if ( ! empty( $history ) && false === update_option( self::HISTORY_OPTION, array(), false ) ) {
-			throw new \RuntimeException( __( 'The stored benchmark history could not be cleared.', 'wp-hosting-benchmark' ) );
+		if ( ! empty( $history ) && ! $this->save_history( array() ) ) {
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The stored benchmark history could not be cleared.', 'wp-hosting-benchmark' ) ) );
 		}
 
 		delete_transient( self::CLEANUP_TRANSIENT );
