@@ -9,7 +9,20 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 delete_option( 'wp_hosting_benchmark_history' );
 delete_option( 'wp_hosting_benchmark_schema_version' );
+delete_option( 'wp_hosting_benchmark_settings' );
 delete_transient( 'wp_hosting_benchmark_cleanup_throttle' );
+delete_transient( 'wp_hosting_benchmark_scheduled_lock' );
+
+// Clear any scheduled cron events for the plugin.
+$cron_hook = 'wp_hosting_benchmark_scheduled_run';
+$timestamp = wp_next_scheduled( $cron_hook );
+
+while ( $timestamp ) {
+	wp_unschedule_event( $timestamp, $cron_hook );
+	$timestamp = wp_next_scheduled( $cron_hook );
+}
+
+wp_clear_scheduled_hook( $cron_hook );
 
 global $wpdb;
 

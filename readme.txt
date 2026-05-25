@@ -1,9 +1,9 @@
 === WP Hosting Benchmark ===
 Contributors: github-copilot
-Requires at least: 6.9
-Tested up to: 6.9
-Requires PHP: 7.2.24
-Stable tag: 1.0.8
+Requires at least: 6.5
+Tested up to: 6.8
+Requires PHP: 7.4
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: benchmark, performance, hosting, diagnostics, admin
@@ -45,6 +45,21 @@ No. Benchmark actions are admin-only and require `manage_options` plus valid non
 History is stored in the `wp_hosting_benchmark_history` option.
 
 == Changelog ==
+
+= 1.1.0 =
+* New Settings page: default intensity, history limit (1–200), schedule (off/daily/weekly), and per-test enable/disable.
+* New Compare page: side-by-side comparison of any two stored runs with delta indicators.
+* New CSV export for each run (alongside JSON export).
+* New WP-Cron based scheduled benchmark runs with a 5-minute lock to prevent overlap.
+* New Site Health integration: latest run score and loopback latency surfaced under Tools → Site Health.
+* New WP-CLI command: `wp hosting-benchmark run|list|delete|export`.
+* New benchmark history trend sparkline on the dashboard.
+* Reorganised admin menu with a dedicated Dashboard submenu plus Settings and Compare entries.
+* Hardened option writes to avoid false-positive "save failed" notices when a run is identical.
+* Reordered nonce-before-capability checks in bootstrap probe and JSON export handler.
+* Bumped supported WordPress to 6.5+ and minimum PHP to 7.4.
+* Increased default history retention from 20 to 50 runs.
+* Improved labels, empty states, and admin notices.
 
 = 1.0.2 =
 

@@ -8,9 +8,15 @@
 namespace WPHostingBenchmark;
 
 use WPHostingBenchmark\Admin\Page;
+use WPHostingBenchmark\Admin\Settings_Page;
+use WPHostingBenchmark\Admin\Compare_Page;
 use WPHostingBenchmark\Benchmark\Runner;
 use WPHostingBenchmark\Benchmark\Scorer;
+use WPHostingBenchmark\CLI\Command as CLI_Command;
+use WPHostingBenchmark\Export\Csv_Exporter;
 use WPHostingBenchmark\Export\Json_Exporter;
+use WPHostingBenchmark\Health\Site_Health;
+use WPHostingBenchmark\Schedule\Cron;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -44,13 +50,71 @@ class Plugin {
 	protected $exporter;
 
 	/**
+	 * CSV export handler.
+	 *
+	 * @var Csv_Exporter
+	 */
+	protected $csv_exporter;
+
+	/**
+	 * Settings admin page.
+	 *
+	 * @var Settings_Page
+	 */
+	protected $settings_page;
+
+	/**
+	 * Compare admin page.
+	 *
+	 * @var Compare_Page
+	 */
+	protected $compare_page;
+
+	/**
+	 * Scheduled benchmark coordinator.
+	 *
+	 * @var Cron
+	 */
+	protected $cron;
+
+	/**
+	 * Site Health integration.
+	 *
+	 * @var Site_Health
+	 */
+	protected $site_health;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->storage  = new Storage();
-		$this->runner   = new Runner( $this->storage, new Scorer() );
-		$this->page     = new Page( $this->runner, $this->storage );
-		$this->exporter = new Json_Exporter( $this->storage );
+		$this->storage       = new Storage();
+		$this->runner        = new Runner( $this->storage, new Scorer() );
+		$this->page          = new Page( $this->runner, $this->storage );
+		$this->exporter      = new Json_Exporter( $this->storage );
+		$this->csv_exporter  = new Csv_Exporter( $this->storage );
+		$this->settings_page = new Settings_Page();
+		$this->compare_page  = new Compare_Page( $this->storage );
+		$this->cron          = new Cron( $this->runner );
+		$this->site_health   = new Site_Health( $this->storage );
+	}
+
+	/**
+	 * Get the benchmark runner.
+	 *
+	 * @return Runner
+	 */
+	public function get_runner() {
+		return $this->runner;
+	}
+
+	/**
+	 * Get the result storage.
+	 *
+	 * @return Storage
+	 */
+	public function get_storage() {
+		return $this->storage;
 	}
 
 	/**
@@ -63,9 +127,19 @@ class Plugin {
 		add_action( 'admin_init', array( $this, 'maybe_upgrade' ) );
 		add_action( 'admin_post_wp_hosting_benchmark_bootstrap_probe', array( $this, 'handle_bootstrap_probe' ) );
 
+		$this->cron->register();
+		$this->site_health->register();
+
 		if ( is_admin() ) {
 			$this->page->register();
+			$this->settings_page->register();
+			$this->compare_page->register();
 			$this->exporter->register();
+			$this->csv_exporter->register();
+		}
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			CLI_Command::register( $this->runner, $this->storage );
 		}
 	}
 
@@ -124,21 +198,21 @@ class Plugin {
 				);
 			}
 
-			if ( ! current_user_can( Page::CAPABILITY ) ) {
-				wp_send_json_error(
-					array(
-						'message' => __( 'You do not have permission to run bootstrap probes.', 'wp-hosting-benchmark' ),
-					),
-					403
-				);
-			}
-
 			$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 
 			if ( ! wp_verify_nonce( $nonce, 'wp_hosting_benchmark_bootstrap_probe' ) ) {
 				wp_send_json_error(
 					array(
 						'message' => __( 'The bootstrap probe nonce is invalid.', 'wp-hosting-benchmark' ),
+					),
+					403
+				);
+			}
+
+			if ( ! current_user_can( Page::CAPABILITY ) ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'You do not have permission to run bootstrap probes.', 'wp-hosting-benchmark' ),
 					),
 					403
 				);
@@ -163,6 +237,10 @@ class Plugin {
 	/**
 	 * Activation callback.
 	 *
+	 * On multisite, schema installation runs only for the current site. Network
+	 * administrators should activate per-site to install the option on each
+	 * site that needs benchmark history.
+	 *
 	 * @return void
 	 */
 	public static function activate() {
@@ -182,6 +260,7 @@ class Plugin {
 		try {
 			$storage = new Storage();
 			$storage->cleanup_temporary_records();
+			Cron::clear_all_events();
 		} catch ( \Throwable $throwable ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				error_log( 'WP Hosting Benchmark deactivation cleanup failed: ' . sanitize_text_field( $throwable->getMessage() ) );

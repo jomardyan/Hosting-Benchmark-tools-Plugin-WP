@@ -44,15 +44,15 @@ class Json_Exporter {
 	 */
 	public function handle_export() {
 		try {
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have permission to export benchmark results.', 'wp-hosting-benchmark' ) );
-			}
-
 			$run_id = isset( $_REQUEST['benchmark_id'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['benchmark_id'] ) ) : '';
 			$nonce  = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 
 			if ( '' === $run_id || ! wp_verify_nonce( $nonce, 'wp_hosting_benchmark_export_' . $run_id ) ) {
 				wp_die( esc_html__( 'The export request could not be verified.', 'wp-hosting-benchmark' ) );
+			}
+
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have permission to export benchmark results.', 'wp-hosting-benchmark' ) );
 			}
 
 			$run = $this->storage->get_run( $run_id );
@@ -72,7 +72,7 @@ class Json_Exporter {
 			header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
 			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 			header( 'X-Content-Type-Options: nosniff' );
-			echo $payload;
+			echo $payload; // phpcs:ignore WordPress.Security.EscapeOutput -- JSON payload streamed as file.
 			exit;
 		} catch ( \Throwable $throwable ) {
 			wp_die( esc_html( sanitize_text_field( $throwable->getMessage() ) ) );

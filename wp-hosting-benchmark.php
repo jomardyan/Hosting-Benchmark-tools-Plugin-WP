@@ -2,9 +2,9 @@
 /**
  * Plugin Name: WP Hosting Benchmark
  * Description: Benchmarks the hosting performance of the WordPress site where it is installed.
- * Version: 1.0.8
- * Requires at least: 6.9
- * Requires PHP: 7.2.24
+ * Version: 1.1.0
+ * Requires at least: 6.5
+ * Requires PHP: 7.4
  * Author: GitHub Copilot
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'WP_HOSTING_BENCHMARK_FILE', __FILE__ );
 define( 'WP_HOSTING_BENCHMARK_URL', plugin_dir_url( __FILE__ ) );
 define( 'WP_HOSTING_BENCHMARK_DIR', plugin_dir_path( __FILE__ ) );
-define( 'WP_HOSTING_BENCHMARK_VERSION', '1.0.8' );
+define( 'WP_HOSTING_BENCHMARK_VERSION', '1.1.0' );
 
 spl_autoload_register(
 	static function ( $class ) {

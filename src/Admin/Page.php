@@ -70,6 +70,16 @@ class Page {
 			'dashicons-performance',
 			59
 		);
+
+		// Rename the first auto-generated submenu so the Dashboard label is clearer.
+		add_submenu_page(
+			'wp-hosting-benchmark',
+			__( 'Hosting Benchmark Dashboard', 'wp-hosting-benchmark' ),
+			__( 'Dashboard', 'wp-hosting-benchmark' ),
+			self::CAPABILITY,
+			'wp-hosting-benchmark',
+			array( $this, 'render_page' )
+		);
 	}
 
 	/**
@@ -251,11 +261,13 @@ class Page {
 			echo '<div class="notice notice-warning"><p>' . esc_html__( 'The selected benchmark run could not be found. Showing the latest available report instead.', 'wp-hosting-benchmark' ) . '</p></div>';
 		}
 
-		if ( empty( $_GET['notice'] ) ) {
+		// Read-only display flag from a server-issued redirect URL; safely
+		// validated via sanitize_key() and an allow-list below.
+		if ( empty( $_GET['notice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
-		$notice = sanitize_key( wp_unslash( $_GET['notice'] ) );
+		$notice = sanitize_key( wp_unslash( $_GET['notice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$text   = '';
 
 		if ( 'benchmark-complete' === $notice ) {
@@ -375,11 +387,14 @@ class Page {
 		echo '.wp-hosting-benchmark-summary-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:start;margin-bottom:16px;}';
 		echo '.wp-hosting-benchmark-summary-grid>*{min-width:0;}';
 		echo '.wp-hosting-benchmark-speedometer{display:grid;justify-items:center;gap:4px;padding:12px;border:1px solid #dcdcde;background:#f6f7f7;color:var(--wp-hosting-benchmark-tone);}';
-		echo '.wp-hosting-benchmark-speedometer-svg{display:none;}';
+		echo '.wp-hosting-benchmark-speedometer-svg{display:block;width:120px;height:60px;}';
+		echo '.wp-hosting-benchmark-speedometer-svg path{stroke:var(--wp-hosting-benchmark-tone);stroke-width:8;fill:none;stroke-linecap:round;}';
 		echo '.wp-hosting-benchmark-speedometer-caption{font-size:11px;font-weight:600;text-transform:uppercase;color:#646970;}';
 		echo '.wp-hosting-benchmark-speedometer-value{font-size:36px;line-height:1;font-weight:600;color:var(--wp-hosting-benchmark-tone);}';
 		echo '.wp-hosting-benchmark-speedometer-note{margin:0;color:#646970;}';
-		echo '.wp-hosting-benchmark-verdict-chip{display:none;}';
+		echo '.wp-hosting-benchmark-verdict-chip{display:inline-block;padding:3px 9px;margin:0 0 10px;border:1px solid var(--wp-hosting-benchmark-tone);color:var(--wp-hosting-benchmark-tone);background:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}';
+		echo '.wp-hosting-benchmark-trend-sparkline{display:inline-block;width:90px;height:24px;vertical-align:middle;margin-left:6px;}';
+		echo '.wp-hosting-benchmark-trend-sparkline polyline{fill:none;stroke:#2271b1;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}';
 		echo '.wp-hosting-benchmark-verdict-title{margin:0 0 8px;font-size:18px;line-height:1.3;color:#1d2327;}';
 		echo '.wp-hosting-benchmark-verdict-copy{margin:0 0 12px;line-height:1.5;color:#3c434a;max-width:68ch;}';
 		echo '.wp-hosting-benchmark-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:12px 0 0;}';
@@ -441,12 +456,14 @@ class Page {
 	 * @return void
 	 */
 	protected function render_controls( $selected_run ) {
-		$levels = $this->runner->get_intensity_levels();
+		$levels   = $this->runner->get_intensity_levels();
+		$settings = Storage::get_settings();
+		$default  = isset( $settings['default_intensity'] ) ? $settings['default_intensity'] : 'standard';
 
-		$current_intensity = is_array( $selected_run ) && ! empty( $selected_run['intensity'] ) ? sanitize_key( (string) $selected_run['intensity'] ) : 'standard';
+		$current_intensity = is_array( $selected_run ) && ! empty( $selected_run['intensity'] ) ? sanitize_key( (string) $selected_run['intensity'] ) : $default;
 
 		if ( ! isset( $levels[ $current_intensity ] ) ) {
-			$current_intensity = 'standard';
+			$current_intensity = isset( $levels[ $default ] ) ? $default : 'standard';
 		}
 
 		echo '<div class="postbox wp-hosting-benchmark-card">';
@@ -483,15 +500,18 @@ class Page {
 
 		if ( $selected_run ) {
 			echo '<p class="wp-hosting-benchmark-subtle">' . esc_html( sprintf( __( 'Selected run: %s', 'wp-hosting-benchmark' ), $this->format_run_timestamp( $selected_run['created_at'] ) ) ) . '</p>';
-			echo '<div class="wp-hosting-benchmark-button-group"><a class="button button-secondary" href="' . esc_url( $this->get_export_url( $selected_run['id'] ) ) . '">' . esc_html__( 'Export JSON', 'wp-hosting-benchmark' ) . '</a></div>';
+			echo '<div class="wp-hosting-benchmark-button-group">';
+			echo '<a class="button button-secondary" href="' . esc_url( $this->get_export_url( $selected_run['id'] ) ) . '">' . esc_html__( 'Export JSON', 'wp-hosting-benchmark' ) . '</a>';
+			echo '<a class="button button-secondary" href="' . esc_url( $this->get_csv_export_url( $selected_run['id'] ) ) . '">' . esc_html__( 'Export CSV', 'wp-hosting-benchmark' ) . '</a>';
+			echo '</div>';
 		} else {
-			echo '<p class="wp-hosting-benchmark-subtle">' . esc_html__( 'Run a benchmark to enable JSON export.', 'wp-hosting-benchmark' ) . '</p>';
+			echo '<p class="wp-hosting-benchmark-subtle">' . esc_html__( 'Run a benchmark to enable JSON or CSV export.', 'wp-hosting-benchmark' ) . '</p>';
 		}
 
 		echo '<form id="wp-hosting-benchmark-clear-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wp_hosting_benchmark_clear_history" />';
 		wp_nonce_field( 'wp_hosting_benchmark_clear_history' );
-		echo '<div class="wp-hosting-benchmark-button-group"><button type="submit" class="button button-link-delete" ' . disabled( ! $selected_run, true, false ) . '>' . esc_html__( 'Clear history', 'wp-hosting-benchmark' ) . '</button></div>';
+		echo '<div class="wp-hosting-benchmark-button-group"><button type="submit" class="button button-link-delete" ' . disabled( ! $selected_run, true, false ) . '>' . esc_html__( 'Clear all history', 'wp-hosting-benchmark' ) . '</button></div>';
 		echo '</form>';
 		echo '</div>';
 	}
@@ -787,9 +807,11 @@ class Page {
 		echo '</div>';
 
 		if ( empty( $history ) ) {
-			echo '<p>' . esc_html__( 'No history is stored yet.', 'wp-hosting-benchmark' ) . '</p></div>';
+			echo '<p class="wp-hosting-benchmark-empty-state">' . esc_html__( 'No history is stored yet. Run a benchmark to start comparing results over time.', 'wp-hosting-benchmark' ) . '</p></div>';
 			return;
 		}
+
+		$this->render_history_sparkline( $history );
 
 		echo '<div class="wp-hosting-benchmark-table-wrap">';
 		echo '<table class="widefat striped wp-hosting-benchmark-table wp-hosting-benchmark-history-table"><thead><tr><th scope="col">' . esc_html__( 'Date', 'wp-hosting-benchmark' ) . '</th><th scope="col">' . esc_html__( 'Intensity', 'wp-hosting-benchmark' ) . '</th><th scope="col">' . esc_html__( 'Score', 'wp-hosting-benchmark' ) . '</th><th scope="col">' . esc_html__( 'Confidence', 'wp-hosting-benchmark' ) . '</th><th scope="col">' . esc_html__( 'Results', 'wp-hosting-benchmark' ) . '</th><th scope="col" class="column-actions">' . esc_html__( 'Actions', 'wp-hosting-benchmark' ) . '</th></tr></thead><tbody>';
@@ -806,7 +828,8 @@ class Page {
 			echo '<td>' . esc_html( sprintf( __( '%1$d success, %2$d failed, %3$d unavailable', 'wp-hosting-benchmark' ), (int) $run['summary']['success'], (int) $run['summary']['failed'], (int) $run['summary']['unavailable'] ) ) . '</td>';
 			echo '<td class="column-actions"><div class="wp-hosting-benchmark-actions">';
 			echo '<a class="button button-small" href="' . esc_url( $this->get_page_url( array( 'benchmark_id' => $run['id'] ) ) ) . '" aria-label="' . esc_attr( sprintf( __( 'View benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'View', 'wp-hosting-benchmark' ) . '</a>';
-			echo '<a class="button button-small" href="' . esc_url( $this->get_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as JSON', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'Export', 'wp-hosting-benchmark' ) . '</a>';
+			echo '<a class="button button-small" href="' . esc_url( $this->get_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as JSON', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'JSON', 'wp-hosting-benchmark' ) . '</a>';
+			echo '<a class="button button-small" href="' . esc_url( $this->get_csv_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as CSV', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'CSV', 'wp-hosting-benchmark' ) . '</a>';
 			echo '<form class="wp-hosting-benchmark-delete-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 			echo '<input type="hidden" name="action" value="wp_hosting_benchmark_delete_run" />';
 			echo '<input type="hidden" name="benchmark_id" value="' . esc_attr( $run['id'] ) . '" />';
@@ -1108,9 +1131,51 @@ class Page {
 	}
 
 	/**
-	 * Build a JSON export URL.
+	 * Render a small SVG sparkline showing the overall score trend.
 	 *
-	 * @param string $run_id Run identifier.
+	 * @param array $history History payload (newest first).
+	 * @return void
+	 */
+	protected function render_history_sparkline( array $history ) {
+		$points = array();
+		foreach ( array_reverse( $history ) as $run ) {
+			if ( isset( $run['scores']['overall'] ) ) {
+				$points[] = max( 0, min( 100, (int) $run['scores']['overall'] ) );
+			}
+		}
+
+		if ( count( $points ) < 2 ) {
+			return;
+		}
+
+		$width  = 320;
+		$height = 56;
+		$count  = count( $points );
+		$step   = $count > 1 ? ( $width / ( $count - 1 ) ) : 0;
+		$coords = array();
+
+		foreach ( $points as $index => $value ) {
+			$x        = round( $index * $step, 2 );
+			$y        = round( $height - ( $value / 100 ) * $height, 2 );
+			$coords[] = $x . ',' . $y;
+		}
+
+		$polyline = implode( ' ', $coords );
+		$first    = reset( $points );
+		$last     = end( $points );
+		$delta    = $last - $first;
+		$trend    = 0 === $delta ? __( 'no change', 'wp-hosting-benchmark' ) : ( $delta > 0 ? sprintf( __( '+%d points overall', 'wp-hosting-benchmark' ), $delta ) : sprintf( __( '%d points overall', 'wp-hosting-benchmark' ), $delta ) );
+
+		echo '<p class="wp-hosting-benchmark-trend-label">' . esc_html( sprintf( __( 'Trend across %1$d runs: %2$s', 'wp-hosting-benchmark' ), $count, $trend ) ) . '</p>';
+		echo '<svg class="wp-hosting-benchmark-trend-sparkline" viewBox="0 0 ' . esc_attr( $width ) . ' ' . esc_attr( $height ) . '" role="img" aria-label="' . esc_attr__( 'Overall score trend', 'wp-hosting-benchmark' ) . '" focusable="false">';
+		echo '<polyline fill="none" stroke="#2271b1" stroke-width="2" points="' . esc_attr( $polyline ) . '" />';
+		echo '</svg>';
+	}
+
+	/**
+	 * Get the export URL for a benchmark run.
+	 *
+	 * @param string $run_id Run ID.
 	 * @return string
 	 */
 	protected function get_export_url( $run_id ) {
@@ -1119,6 +1184,23 @@ class Page {
 				'action'       => 'wp_hosting_benchmark_export',
 				'benchmark_id' => $run_id,
 				'_wpnonce'     => wp_create_nonce( 'wp_hosting_benchmark_export_' . $run_id ),
+			),
+			admin_url( 'admin-post.php' )
+		);
+	}
+
+	/**
+	 * Get the CSV export URL for a benchmark run.
+	 *
+	 * @param string $run_id Run ID.
+	 * @return string
+	 */
+	protected function get_csv_export_url( $run_id ) {
+		return add_query_arg(
+			array(
+				'action'       => 'wp_hosting_benchmark_export_csv',
+				'benchmark_id' => $run_id,
+				'_wpnonce'     => wp_create_nonce( 'wp_hosting_benchmark_export_csv_' . $run_id ),
 			),
 			admin_url( 'admin-post.php' )
 		);
