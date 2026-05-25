@@ -1131,12 +1131,6 @@ class Page {
 	}
 
 	/**
-	 * Build a JSON export URL.
-	 *
-	 * @param string $run_id Run identifier.
-	 * @return string
-	 */
-	/**
 	 * Render a small SVG sparkline showing the overall score trend.
 	 *
 	 * @param array $history History payload (newest first).

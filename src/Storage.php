@@ -157,8 +157,6 @@ class Storage {
 	 * @return bool True on success or no-op, false only on DB failure.
 	 */
 	protected function save_history( array $history ) {
-		global $wpdb;
-
 		$existing = get_option( self::HISTORY_OPTION, null );
 
 		if ( $existing === $history ) {
@@ -166,7 +164,7 @@ class Storage {
 		}
 
 		if ( false === update_option( self::HISTORY_OPTION, $history, false ) ) {
-			return empty( $wpdb->last_error );
+			return false;
 		}
 
 		return true;
