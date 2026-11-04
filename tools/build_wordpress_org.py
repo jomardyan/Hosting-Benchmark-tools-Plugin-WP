@@ -122,10 +122,12 @@ def main():
     for plugin in CONFIG['plugins']:
         files, version, provenance = payload(plugin)
         path = OUTPUT / (plugin['slug'] + '.zip')
-        with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        # Stored members avoid zlib-version differences across Windows/Linux builds.
+        with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_STORED) as archive:
             for name, data in sorted(files.items()):
                 info = zipfile.ZipInfo(plugin['slug'] + '/' + name, (1980, 1, 1, 0, 0, 0))
-                info.compress_type = zipfile.ZIP_DEFLATED
+                info.create_system = 3
+                info.compress_type = zipfile.ZIP_STORED
                 info.external_attr = 0o100644 << 16
                 archive.writestr(info, data)
         with zipfile.ZipFile(path) as archive:
