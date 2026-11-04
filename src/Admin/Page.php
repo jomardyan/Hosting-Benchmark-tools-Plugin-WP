@@ -206,6 +206,7 @@ class Page {
 			echo '<div class="notice notice-info inline wp-hosting-benchmark-selected-report"><p>';
 			echo '<strong>' . esc_html__( 'Selected report:', 'wp-hosting-benchmark' ) . '</strong> ';
 			echo esc_html( $header_verdict['title'] ) . ' ';
+			/* translators: 1: formatted value for %1$s, 2: formatted value for %2$s, 3: formatted value for %3$s. Message: Score %1$s, confidence %2$s%%, recorded %3$s. */
 			echo '<span class="description">' . esc_html( sprintf( __( 'Score %1$s, confidence %2$s%%, recorded %3$s.', 'wp-hosting-benchmark' ), number_format_i18n( (int) $selected_run['scores']['overall'] ), number_format_i18n( (int) $selected_run['scores']['confidence'] ), $this->format_run_timestamp( $selected_run['created_at'] ) ) ) . '</span>';
 			echo '</p></div>';
 		} else {
@@ -499,6 +500,7 @@ class Page {
 		echo '<p class="wp-hosting-benchmark-card-intro">' . esc_html__( 'Export the currently selected report as JSON, or clear stored history if you want to start a fresh measurement series.', 'wp-hosting-benchmark' ) . '</p>';
 
 		if ( $selected_run ) {
+			/* translators: 1: formatted value for %s. Message: Selected run: %s */
 			echo '<p class="wp-hosting-benchmark-subtle">' . esc_html( sprintf( __( 'Selected run: %s', 'wp-hosting-benchmark' ), $this->format_run_timestamp( $selected_run['created_at'] ) ) ) . '</p>';
 			echo '<div class="wp-hosting-benchmark-button-group">';
 			echo '<a class="button button-secondary" href="' . esc_url( $this->get_export_url( $selected_run['id'] ) ) . '">' . esc_html__( 'Export JSON', 'wp-hosting-benchmark' ) . '</a>';
@@ -565,13 +567,17 @@ class Page {
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Confidence', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( number_format_i18n( $confidence ) ) . '%</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( $this->get_confidence_interpretation( $confidence ) ) . '</span></div>';
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Intensity', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( $this->get_intensity_label( $run['intensity'] ) ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html__( 'Benchmark profile used for this run', 'wp-hosting-benchmark' ) . '</span></div>';
 		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Total runtime', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( number_format_i18n( (float) $run['total_duration'], 2 ) ) . ' ' . esc_html__( 'ms', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html__( 'Total request time spent on the benchmark', 'wp-hosting-benchmark' ) . '</span></div>';
-		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Runtime impact', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( null === $runtime_score ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( $runtime_score, 1 ) . '/100' ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( sprintf( __( 'End-to-end runtime contributes %d%% of the overall score', 'wp-hosting-benchmark' ), $runtime_weight ) ) . '</span></div>';
-		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Watch area', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( $weakest ? $weakest['label'] : __( 'Balanced', 'wp-hosting-benchmark' ) ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( $weakest ? sprintf( __( 'Lowest measured category at %d/100', 'wp-hosting-benchmark' ), (int) $weakest['score'] ) : __( 'No weak measured category detected', 'wp-hosting-benchmark' ) ) . '</span></div>';
+		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Runtime impact', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( null === $runtime_score ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( $runtime_score, 1 ) . '/100' ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( sprintf( /* translators: %d: runtime percentage in the overall score. */ __( 'End-to-end runtime contributes %d%% of the overall score', 'wp-hosting-benchmark' ), $runtime_weight ) ) . '</span></div>';
+		echo '<div class="wp-hosting-benchmark-stat-card"><span class="wp-hosting-benchmark-stat-label">' . esc_html__( 'Watch area', 'wp-hosting-benchmark' ) . '</span><span class="wp-hosting-benchmark-stat-value">' . esc_html( $weakest ? $weakest['label'] : __( 'Balanced', 'wp-hosting-benchmark' ) ) . '</span><span class="wp-hosting-benchmark-stat-copy">' . esc_html( $weakest ? sprintf( /* translators: %d: lowest measured category score out of 100. */ __( 'Lowest measured category at %d/100', 'wp-hosting-benchmark' ), (int) $weakest['score'] ) : __( 'No weak measured category detected', 'wp-hosting-benchmark' ) ) . '</span></div>';
 		echo '</div>';
 		echo '<div class="wp-hosting-benchmark-result-breakdown">';
+		/* translators: 1: formatted value for %d. Message: %d successful */
 		echo '<span class="wp-hosting-benchmark-breakdown-pill">' . esc_html( sprintf( __( '%d successful', 'wp-hosting-benchmark' ), $success_count ) ) . '</span>';
+		/* translators: 1: formatted value for %d. Message: %d failed */
 		echo '<span class="wp-hosting-benchmark-breakdown-pill">' . esc_html( sprintf( __( '%d failed', 'wp-hosting-benchmark' ), $failed_count ) ) . '</span>';
+		/* translators: 1: formatted value for %d. Message: %d unavailable */
 		echo '<span class="wp-hosting-benchmark-breakdown-pill">' . esc_html( sprintf( __( '%d unavailable', 'wp-hosting-benchmark' ), $missing_count ) ) . '</span>';
+		/* translators: 1: formatted value for %s. Message: Recorded %s */
 		echo '<span class="wp-hosting-benchmark-breakdown-pill">' . esc_html( sprintf( __( 'Recorded %s', 'wp-hosting-benchmark' ), $this->format_run_timestamp( $run['created_at'] ) ) ) . '</span>';
 		echo '</div>';
 		echo '</div>';
@@ -590,12 +596,14 @@ class Page {
 				echo '<div class="wp-hosting-benchmark-category-card">';
 				echo '<div class="wp-hosting-benchmark-category-top"><span class="wp-hosting-benchmark-category-title">' . esc_html( $category['label'] ) . '</span><span class="wp-hosting-benchmark-category-score">' . esc_html( null === $category_score ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( $category_score ) ) . '</span></div>';
 				echo '<div class="wp-hosting-benchmark-category-bar"><span style="width:' . esc_attr( $bar_width ) . '%"></span></div>';
+				/* translators: 1: formatted value for %d. Message: %d measured tests in this category */
 				echo '<p class="wp-hosting-benchmark-category-meta">' . esc_html( sprintf( __( '%d measured tests in this category', 'wp-hosting-benchmark' ), (int) $category['test_count'] ) ) . '</p>';
 				echo '</div>';
 			}
 
 			echo '</div>';
 		}
+		/* translators: 1: formatted value for %1$d, 2: formatted value for %2$d, 3: formatted value for %3$d. Message: Category scores form %1$d%% of the overall score (base score: %2$d/100). Total runtime contributes the remaining %3$d%%, so very slow end-to-end runs are penalized even when individual tests look strong. */
 		echo '<p class="description">' . esc_html( sprintf( __( 'Category scores form %1$d%% of the overall score (base score: %2$d/100). Total runtime contributes the remaining %3$d%%, so very slow end-to-end runs are penalized even when individual tests look strong.', 'wp-hosting-benchmark' ), max( 0, 100 - $runtime_weight ), $base_overall, $runtime_weight ) ) . '</p>';
 
 		if ( ! empty( $run['recommendations'] ) ) {
@@ -627,6 +635,7 @@ class Page {
 
 		if ( $run ) {
 			$current_reading = sprintf(
+				/* translators: 1: formatted value for %1$s, 2: formatted value for %2$s. Message: Current reading: %1$s overall with %2$s confidence. Overall now blends category quality with total runtime impact. */
 				__( 'Current reading: %1$s overall with %2$s confidence. Overall now blends category quality with total runtime impact.', 'wp-hosting-benchmark' ),
 				$this->get_score_interpretation( (int) $run['scores']['overall'] ),
 				$this->get_confidence_interpretation( (int) $run['scores']['confidence'] )
@@ -777,7 +786,7 @@ class Page {
 			echo '<tr>';
 			echo '<td data-label="' . esc_attr__( 'Test', 'wp-hosting-benchmark' ) . '">' . esc_html( $result['label'] ) . '</td>';
 			echo '<td data-label="' . esc_attr__( 'Category', 'wp-hosting-benchmark' ) . '">' . esc_html( $result['category_label'] ) . '</td>';
-			echo '<td data-label="' . esc_attr__( 'Status', 'wp-hosting-benchmark' ) . '">' . $this->render_status_badge( $result['status'] ) . '</td>';
+			echo '<td data-label="' . esc_attr__( 'Status', 'wp-hosting-benchmark' ) . '">' . wp_kses_post( $this->render_status_badge( $result['status'] ) ) . '</td>';
 			echo '<td data-label="' . esc_attr__( 'Duration (ms)', 'wp-hosting-benchmark' ) . '">' . esc_html( number_format_i18n( (float) $result['duration_ms'], 2 ) ) . '</td>';
 			echo '<td data-label="' . esc_attr__( 'Operations', 'wp-hosting-benchmark' ) . '">' . esc_html( number_format_i18n( (int) $result['operations'] ) ) . '</td>';
 			echo '<td data-label="' . esc_attr__( 'Ops/sec', 'wp-hosting-benchmark' ) . '">' . esc_html( null === $result['ops_per_second'] ? __( 'N/A', 'wp-hosting-benchmark' ) : number_format_i18n( (float) $result['ops_per_second'], 2 ) ) . '</td>';
@@ -825,10 +834,14 @@ class Page {
 			echo '<td>' . esc_html( $this->get_intensity_label( $run['intensity'] ) ) . '</td>';
 			echo '<td>' . esc_html( number_format_i18n( (int) $run['scores']['overall'] ) ) . '</td>';
 			echo '<td>' . esc_html( number_format_i18n( (int) $run['scores']['confidence'] ) ) . '%</td>';
+			/* translators: 1: formatted value for %1$d, 2: formatted value for %2$d, 3: formatted value for %3$d. Message: %1$d success, %2$d failed, %3$d unavailable */
 			echo '<td>' . esc_html( sprintf( __( '%1$d success, %2$d failed, %3$d unavailable', 'wp-hosting-benchmark' ), (int) $run['summary']['success'], (int) $run['summary']['failed'], (int) $run['summary']['unavailable'] ) ) . '</td>';
 			echo '<td class="column-actions"><div class="wp-hosting-benchmark-actions">';
+			/* translators: 1: formatted value for %s. Message: View benchmark from %s */
 			echo '<a class="button button-small" href="' . esc_url( $this->get_page_url( array( 'benchmark_id' => $run['id'] ) ) ) . '" aria-label="' . esc_attr( sprintf( __( 'View benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'View', 'wp-hosting-benchmark' ) . '</a>';
+			/* translators: 1: formatted value for %s. Message: Export benchmark from %s as JSON */
 			echo '<a class="button button-small" href="' . esc_url( $this->get_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as JSON', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'JSON', 'wp-hosting-benchmark' ) . '</a>';
+			/* translators: 1: formatted value for %s. Message: Export benchmark from %s as CSV */
 			echo '<a class="button button-small" href="' . esc_url( $this->get_csv_export_url( $run['id'] ) ) . '" aria-label="' . esc_attr( sprintf( __( 'Export benchmark from %s as CSV', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'CSV', 'wp-hosting-benchmark' ) . '</a>';
 			echo '<form class="wp-hosting-benchmark-delete-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 			echo '<input type="hidden" name="action" value="wp_hosting_benchmark_delete_run" />';
@@ -839,6 +852,7 @@ class Page {
 			}
 
 			wp_nonce_field( 'wp_hosting_benchmark_delete_run_' . $run['id'] );
+			/* translators: 1: formatted value for %s. Message: Delete benchmark from %s */
 			echo '<button type="submit" class="button button-small button-link-delete" aria-label="' . esc_attr( sprintf( __( 'Delete benchmark from %s', 'wp-hosting-benchmark' ), $run_date ) ) . '">' . esc_html__( 'Delete', 'wp-hosting-benchmark' ) . '</button>';
 			echo '</form>';
 			echo '</div></td>';
@@ -1042,6 +1056,7 @@ class Page {
 		}
 
 		if ( $weakest && $weakest['score'] < 80 ) {
+			/* translators: 1: formatted value for %s. Message: Watch %s first when you optimize next. */
 			$message .= ' ' . sprintf( __( 'Watch %s first when you optimize next.', 'wp-hosting-benchmark' ), $weakest['label'] );
 		}
 
@@ -1065,6 +1080,7 @@ class Page {
 	protected function render_speedometer( $score ) {
 		$score           = max( 0, min( 100, (int) $score ) );
 		$needle_rotation = -90 + ( $score * 1.8 );
+		/* translators: 1: formatted value for %d. Message: Overall benchmark score %d out of 100 */
 		$aria_label      = sprintf( __( 'Overall benchmark score %d out of 100', 'wp-hosting-benchmark' ), $score );
 
 		echo '<svg class="wp-hosting-benchmark-speedometer-svg" viewBox="0 0 224 144" role="img" aria-label="' . esc_attr( $aria_label ) . '">';
@@ -1164,8 +1180,9 @@ class Page {
 		$first    = reset( $points );
 		$last     = end( $points );
 		$delta    = $last - $first;
-		$trend    = 0 === $delta ? __( 'no change', 'wp-hosting-benchmark' ) : ( $delta > 0 ? sprintf( __( '+%d points overall', 'wp-hosting-benchmark' ), $delta ) : sprintf( __( '%d points overall', 'wp-hosting-benchmark' ), $delta ) );
+		$trend    = 0 === $delta ? __( 'no change', 'wp-hosting-benchmark' ) : ( $delta > 0 ? sprintf( /* translators: %d: positive change in the score. */ __( '+%d points overall', 'wp-hosting-benchmark' ), $delta ) : sprintf( /* translators: %d: change in the score. */ __( '%d points overall', 'wp-hosting-benchmark' ), $delta ) );
 
+		/* translators: 1: formatted value for %1$d, 2: formatted value for %2$s. Message: Trend across %1$d runs: %2$s */
 		echo '<p class="wp-hosting-benchmark-trend-label">' . esc_html( sprintf( __( 'Trend across %1$d runs: %2$s', 'wp-hosting-benchmark' ), $count, $trend ) ) . '</p>';
 		echo '<svg class="wp-hosting-benchmark-trend-sparkline" viewBox="0 0 ' . esc_attr( $width ) . ' ' . esc_attr( $height ) . '" role="img" aria-label="' . esc_attr__( 'Overall score trend', 'wp-hosting-benchmark' ) . '" focusable="false">';
 		echo '<polyline fill="none" stroke="#2271b1" stroke-width="2" points="' . esc_attr( $polyline ) . '" />';

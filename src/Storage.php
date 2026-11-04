@@ -90,14 +90,14 @@ class Storage {
 	public static function install() {
 		if ( false === get_option( self::HISTORY_OPTION, false ) ) {
 			if ( false === add_option( self::HISTORY_OPTION, array(), '', false ) ) {
-				throw new \RuntimeException( __( 'The benchmark history option could not be created.', 'wp-hosting-benchmark' ) );
+				throw new \RuntimeException( __( 'The benchmark history option could not be created.', 'wp-hosting-benchmark' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 			}
 		}
 
 		$current_version = get_option( self::SCHEMA_OPTION );
 
 		if ( self::SCHEMA_VERSION !== $current_version && false === update_option( self::SCHEMA_OPTION, self::SCHEMA_VERSION, false ) ) {
-			throw new \RuntimeException( __( 'The benchmark storage schema version could not be updated.', 'wp-hosting-benchmark' ) );
+			throw new \RuntimeException( __( 'The benchmark storage schema version could not be updated.', 'wp-hosting-benchmark' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 	}
 
@@ -123,7 +123,7 @@ class Storage {
 		$history = array_values( array_slice( $history, 0, $this->get_history_limit() ) );
 
 		if ( ! $this->save_history( $history ) ) {
-			throw new \RuntimeException( $this->get_database_error_message( __( 'The benchmark results could not be saved to WordPress options.', 'wp-hosting-benchmark' ) ) );
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The benchmark results could not be saved to WordPress options.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		return $run['id'];
@@ -242,7 +242,7 @@ class Storage {
 		}
 
 		if ( ! $this->save_history( array_values( $updated ) ) ) {
-			throw new \RuntimeException( $this->get_database_error_message( __( 'The selected benchmark run could not be deleted.', 'wp-hosting-benchmark' ) ) );
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The selected benchmark run could not be deleted.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		return true;
@@ -257,7 +257,7 @@ class Storage {
 		$history = $this->read_history();
 
 		if ( ! empty( $history ) && ! $this->save_history( array() ) ) {
-			throw new \RuntimeException( $this->get_database_error_message( __( 'The stored benchmark history could not be cleared.', 'wp-hosting-benchmark' ) ) );
+			throw new \RuntimeException( $this->get_database_error_message( __( 'The stored benchmark history could not be cleared.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		delete_transient( self::CLEANUP_TRANSIENT );
@@ -325,7 +325,7 @@ class Storage {
 		);
 
 		if ( false === $result && ! empty( $wpdb->last_error ) ) {
-			throw new \RuntimeException( $this->get_database_error_message( __( 'Temporary benchmark records could not be cleaned up.', 'wp-hosting-benchmark' ) ) );
+			throw new \RuntimeException( $this->get_database_error_message( __( 'Temporary benchmark records could not be cleaned up.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 	}
 
@@ -340,8 +340,8 @@ class Storage {
 
 		if ( ! empty( $wpdb->last_error ) ) {
 			return sprintf(
-				/* translators: %s: database error details */
-				__( '%s Database error: %s', 'wp-hosting-benchmark' ),
+				/* translators: 1: operation failure summary, 2: sanitized database error details. */
+				__( '%1$s Database error: %2$s', 'wp-hosting-benchmark' ),
 				$fallback,
 				sanitize_text_field( $wpdb->last_error )
 			);

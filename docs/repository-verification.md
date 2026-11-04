@@ -23,7 +23,7 @@ and separate remediation; CI does not rewrite history or rotate credentials.
 
 ## Display name and compatibility
 
-The display name is **Lolisoft Press addon WordPress Hosting Benchmarks**. Plugin folder names, main-file
+The display name is **Lolisoft Press addon Hosting Benchmarks**. Plugin folder names, main-file
 basenames, text domains, constants, option names, hooks, REST namespaces and
 database tables retain their existing identities. Existing installations and
 settings therefore keep their upgrade paths. Historical release ZIPs remain historical.

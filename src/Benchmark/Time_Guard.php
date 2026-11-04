@@ -61,8 +61,8 @@ class Time_Guard {
 			throw new Execution_Limit_Exception(
 				sprintf(
 					/* translators: %s: benchmark label */
-					__( 'The benchmark stopped while running %s to stay within the server execution limit.', 'wp-hosting-benchmark' ),
-					$context
+					__( 'The benchmark stopped while running %s to stay within the server execution limit.', 'wp-hosting-benchmark' ), // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
+					$context // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 				)
 			);
 		}

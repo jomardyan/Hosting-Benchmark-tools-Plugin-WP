@@ -14,3 +14,7 @@ dist/source.zip
 .phpunit.result.cache
 
 .venv*/
+
+/.wordpress-check/
+
+/wordpress-org/

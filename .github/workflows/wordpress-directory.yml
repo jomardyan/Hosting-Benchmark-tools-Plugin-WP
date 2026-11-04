@@ -1,0 +1,44 @@
+name: WordPress directory checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wordpress-directory-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  plugin-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Build the exact upload ZIP and checksums
+        run: |
+          python tools/test_directory_domains.py
+          python tools/build_wordpress_org.py
+      - name: Extract the canonical upload candidate
+        run: python -m zipfile -e wordpress-org/lolisoft-hosting-benchmarks.zip .wordpress-check
+      - name: Official Plugin Check (all default checks)
+        uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1
+        with:
+          build-dir: .wordpress-check/lolisoft-hosting-benchmarks
+          slug: lolisoft-hosting-benchmarks
+          strict: false
+      - name: Retain upload archives and file manifests
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: wordpress-org-upload-candidates
+          path: wordpress-org/
+          if-no-files-found: error

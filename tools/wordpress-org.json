@@ -1,0 +1,27 @@
+{
+  "plugins": [
+    {
+      "root": ".",
+      "entry": "wp-hosting-benchmark.php",
+      "slug": "lolisoft-hosting-benchmarks",
+      "include": [
+        "wp-hosting-benchmark.php",
+        "uninstall.php",
+        "src",
+        "languages",
+        "readme.txt",
+        "README.md",
+        "LICENSE",
+        "COPYRIGHT.md",
+        "BUILD.md"
+      ],
+      "domain_rewrite": {
+        "from": "wp-hosting-benchmark",
+        "to": "lolisoft-hosting-benchmarks"
+      }
+    }
+  ],
+  "stale_archives": [
+    "wp-hosting-benchmark.zip"
+  ]
+}

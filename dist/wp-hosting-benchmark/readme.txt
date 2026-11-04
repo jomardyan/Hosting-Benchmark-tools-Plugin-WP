@@ -1,10 +1,9 @@
-=== Lolisoft Press addon WordPress Hosting Benchmarks ===
-Contributors: github-copilot
+=== Lolisoft Press addon Hosting Benchmarks ===
 Requires at least: 6.5
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.1.1
-License: GPL-2.0-or-later
+License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: benchmark, performance, hosting, diagnostics, admin
 
@@ -12,7 +11,7 @@ Benchmarks safe hosting performance from the WordPress admin area and stores a c
 
 == Description ==
 
-Lolisoft Press addon WordPress Hosting Benchmarks runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
+Lolisoft Press addon Hosting Benchmarks runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
 
 Features include:
 
@@ -76,3 +75,11 @@ History is stored in the `wp_hosting_benchmark_history` option.
 = 1.0.0 =
 
 * Initial release.
+== Privacy and external services ==
+
+Benchmark results and environment information are stored in site options and included in administrator-requested exports. Loopback tests contact this site only. There is no external benchmark collection or analytics service. Do not publish exported server/environment details without reviewing them.
+
+== Source code ==
+
+Human-readable source and build inputs: https://github.com/jomardyan/Hosting-Benchmark-tools-Plugin-WP
+See BUILD.txt in the installation ZIP for the exact source root and reproducible build command.

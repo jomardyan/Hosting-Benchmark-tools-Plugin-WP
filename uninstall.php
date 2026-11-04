@@ -1,6 +1,6 @@
 <?php
 /**
- * Cleanup for Lolisoft Press addon WordPress Hosting Benchmarks.
+ * Cleanup for Lolisoft Press addon Hosting Benchmarks.
  *
  * @package WPHostingBenchmark
  */

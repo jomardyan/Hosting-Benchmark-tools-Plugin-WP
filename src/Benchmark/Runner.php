@@ -303,7 +303,7 @@ class Runner {
 			);
 
 			if ( null === $last_value ) {
-				throw new \RuntimeException( $this->storage->get_database_error_message( __( 'Database read benchmark could not read the site URL option.', 'wp-hosting-benchmark' ) ) );
+				throw new \RuntimeException( $this->storage->get_database_error_message( __( 'Database read benchmark could not read the site URL option.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 			}
 		}
 
@@ -352,7 +352,7 @@ class Runner {
 		$started_at  = microtime( true );
 
 		if ( false === $payload ) {
-			throw new \RuntimeException( __( 'The temporary benchmark payload could not be encoded as JSON.', 'wp-hosting-benchmark' ) );
+			throw new \RuntimeException( __( 'The temporary benchmark payload could not be encoded as JSON.', 'wp-hosting-benchmark' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		try {
@@ -409,16 +409,17 @@ class Runner {
 		$test            = $this->get_test_by_slug( 'autoloaded_options' );
 		$autoload_values = $this->get_autoload_values_to_measure();
 		$placeholders    = implode( ', ', array_fill( 0, count( $autoload_values ), '%s' ) );
-		$sql             = "SELECT COUNT(*) AS option_count, COALESCE(SUM(LENGTH(option_name) + LENGTH(option_value)), 0) AS total_bytes FROM {$wpdb->options} WHERE autoload IN ({$placeholders})";
-		$prepared_sql    = call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $sql ), $autoload_values ) );
+		$sql             = "SELECT COUNT(*) AS option_count, COALESCE(SUM(LENGTH(option_name) + LENGTH(option_value)), 0) AS total_bytes FROM %i WHERE autoload IN ({$placeholders})";
+		$prepared_sql    = $wpdb->prepare( $sql, array_merge( array( $wpdb->options ), $autoload_values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL above contains only the count-generated placeholder list; identifiers and every autoload status are bound.
 
 		$guard->enforce( $test['label'] );
 		$started_at = microtime( true );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Result of wpdb::prepare above; placeholders are generated solely from the fixed autoload status list.
 		$row        = $wpdb->get_row( $prepared_sql, ARRAY_A );
 		$duration_ms = $this->elapsed_ms( $started_at );
 
 		if ( null === $row && ! empty( $wpdb->last_error ) ) {
-			throw new \RuntimeException( $this->storage->get_database_error_message( __( 'The autoloaded options footprint could not be measured.', 'wp-hosting-benchmark' ) ) );
+			throw new \RuntimeException( $this->storage->get_database_error_message( __( 'The autoloaded options footprint could not be measured.', 'wp-hosting-benchmark' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		$total_bytes             = isset( $row['total_bytes'] ) ? (int) $row['total_bytes'] : 0;
@@ -463,13 +464,13 @@ class Runner {
 		$created    = array();
 
 		if ( ! empty( $uploads['error'] ) ) {
-			throw new \RuntimeException( sanitize_text_field( $uploads['error'] ) );
+			throw new \RuntimeException( sanitize_text_field( $uploads['error'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		$benchmark_dir = trailingslashit( $uploads['basedir'] ) . 'wp-hosting-benchmark';
 
 		if ( ! wp_mkdir_p( $benchmark_dir ) ) {
-			throw new \RuntimeException( __( 'The uploads benchmark directory could not be created.', 'wp-hosting-benchmark' ) );
+			throw new \RuntimeException( __( 'The uploads benchmark directory could not be created.', 'wp-hosting-benchmark' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 		}
 
 		$started_at = microtime( true );
@@ -493,7 +494,7 @@ class Runner {
 		} finally {
 			foreach ( $created as $file_path ) {
 				if ( is_file( $file_path ) ) {
-					unlink( $file_path );
+					wp_delete_file( $file_path );
 				}
 			}
 
@@ -501,6 +502,7 @@ class Runner {
 				$directory_contents = scandir( $benchmark_dir );
 
 				if ( is_array( $directory_contents ) && count( $directory_contents ) <= 2 ) {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Remove only this run's now-empty owned temporary benchmark directory.
 					rmdir( $benchmark_dir );
 				}
 			}
@@ -690,7 +692,7 @@ class Runner {
 			);
 
 			if ( ! is_array( $query->posts ) ) {
-				throw new \RuntimeException( __( 'The content query benchmark returned an unexpected result set.', 'wp-hosting-benchmark' ) );
+				throw new \RuntimeException( __( 'The content query benchmark returned an unexpected result set.', 'wp-hosting-benchmark' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal benchmark error data; Page::render_notice/JSON exporters escape at HTML output, and CLI renders plain text.
 			}
 
 			$total_posts += count( $query->posts );

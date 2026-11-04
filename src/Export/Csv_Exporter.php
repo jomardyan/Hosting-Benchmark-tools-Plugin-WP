@@ -118,6 +118,7 @@ class Csv_Exporter {
 				);
 			}
 
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes php://output CSV response stream; no filesystem path is accepted.
 			fclose( $handle );
 			exit;
 		} catch ( \Throwable $throwable ) {

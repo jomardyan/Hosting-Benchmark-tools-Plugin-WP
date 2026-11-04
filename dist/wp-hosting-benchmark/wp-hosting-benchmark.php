@@ -1,12 +1,13 @@
 <?php
+/** Copyright (c) 2026 Hayk Jomardyan - Lolisoft. See LICENSE. */
 /**
- * Plugin Name: Lolisoft Press addon WordPress Hosting Benchmarks
+ * Plugin Name: Lolisoft Press addon Hosting Benchmarks
  * Description: Benchmarks the hosting performance of the WordPress site where it is installed.
  * Version: 1.1.1
  * Requires at least: 6.5
  * Requires PHP: 7.4
- * Author: GitHub Copilot
- * License: GPL v2 or later
+ * Author: Hayk Jomardyan - Lolisoft
+ * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: wp-hosting-benchmark
  * Domain Path: /languages
@@ -14,6 +15,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Private and directory editions share classes, hooks and stored data.
+// The whole bootstrap is conditional so either load order is safe.
+if ( ! defined( 'WP_HOSTING_BENCHMARK_VERSION' ) ) {
 define( 'WP_HOSTING_BENCHMARK_FILE', __FILE__ );
 define( 'WP_HOSTING_BENCHMARK_URL', plugin_dir_url( __FILE__ ) );
 define( 'WP_HOSTING_BENCHMARK_DIR', plugin_dir_path( __FILE__ ) );
@@ -50,3 +54,5 @@ register_activation_hook( __FILE__, array( 'WPHostingBenchmark\\Plugin', 'activa
 register_deactivation_hook( __FILE__, array( 'WPHostingBenchmark\\Plugin', 'deactivate' ) );
 
 wp_hosting_benchmark()->run();
+
+}

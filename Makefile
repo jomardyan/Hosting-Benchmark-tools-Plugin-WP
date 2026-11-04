@@ -120,3 +120,12 @@ repository-check: audit-lint audit-test audit-build
 .PHONY: audit-install
 audit-install:
 	php --version
+
+.PHONY: wordpress-org-package
+wordpress-org-package:
+	python3 tools/build_wordpress_org.py
+
+.PHONY: wordpress-org-check
+wordpress-org-check:
+	python3 tools/test_directory_domains.py
+	python3 tools/build_wordpress_org.py
