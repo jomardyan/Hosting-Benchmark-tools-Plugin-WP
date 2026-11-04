@@ -76,3 +76,47 @@ clean: ## Remove generated build artifacts.
 	else echo "Nothing to clean."; fi
 
 endif
+
+.PHONY: package
+package:
+	mkdir -p dist
+	git archive --format=zip HEAD -o dist/source.zip
+
+.PHONY: install
+install:
+	php --version
+
+.PHONY: dev
+dev:
+	@echo "Install this plugin in a local WordPress/WooCommerce environment; see README.md."
+
+.PHONY: test
+test:
+	php tests/regression.php
+
+.PHONY: security
+security:
+	gitleaks git --redact --no-banner
+
+.PHONY: audit-lint
+audit-lint:
+	python3 tools/check_sources.py
+
+.PHONY: audit-test
+audit-test:
+	php tests/regression.php
+
+.PHONY: audit-build
+audit-build:
+	python3 tools/check_sources.py
+
+.PHONY: audit-security
+audit-security:
+	gitleaks git --redact --no-banner
+
+.PHONY: repository-check
+repository-check: audit-lint audit-test audit-build
+
+.PHONY: audit-install
+audit-install:
+	php --version

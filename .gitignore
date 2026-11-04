@@ -1,0 +1,16 @@
+
+.venv/
+
+vendor/
+
+node_modules/
+
+__pycache__/
+
+.pytest_cache/
+
+dist/source.zip
+
+.phpunit.result.cache
+
+.venv*/

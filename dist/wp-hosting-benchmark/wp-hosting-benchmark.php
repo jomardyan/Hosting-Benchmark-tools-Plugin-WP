@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WP Hosting Benchmark
+ * Plugin Name: Lolisoft Press addon WordPress Hosting Benchmarks
  * Description: Benchmarks the hosting performance of the WordPress site where it is installed.
  * Version: 1.1.1
  * Requires at least: 6.5

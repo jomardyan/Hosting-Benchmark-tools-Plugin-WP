@@ -263,7 +263,7 @@ class Plugin {
 			Cron::clear_all_events();
 		} catch ( \Throwable $throwable ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'WP Hosting Benchmark deactivation cleanup failed: ' . sanitize_text_field( $throwable->getMessage() ) );
+				error_log( 'Lolisoft Press addon WordPress Hosting Benchmarks deactivation cleanup failed: ' . sanitize_text_field( $throwable->getMessage() ) );
 			}
 		}
 	}
@@ -287,7 +287,7 @@ class Plugin {
 		}
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( 'WP Hosting Benchmark background error: ' . sanitize_text_field( $throwable->getMessage() ) );
+			error_log( 'Lolisoft Press addon WordPress Hosting Benchmarks background error: ' . sanitize_text_field( $throwable->getMessage() ) );
 		}
 	}
 }

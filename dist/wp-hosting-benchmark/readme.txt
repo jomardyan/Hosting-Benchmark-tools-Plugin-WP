@@ -1,4 +1,4 @@
-=== WP Hosting Benchmark ===
+=== Lolisoft Press addon WordPress Hosting Benchmarks ===
 Contributors: github-copilot
 Requires at least: 6.5
 Tested up to: 6.8
@@ -12,7 +12,7 @@ Benchmarks safe hosting performance from the WordPress admin area and stores a c
 
 == Description ==
 
-WP Hosting Benchmark runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
+Lolisoft Press addon WordPress Hosting Benchmarks runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
 
 Features include:
 
