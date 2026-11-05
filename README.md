@@ -162,3 +162,7 @@ Copyright (c) 2026 Hayk Jomardyan - Lolisoft. Existing licenses and third-party 
 ## WordPress.org upload package
 
 See [WORDPRESS-ORG.md](WORDPRESS-ORG.md) for the exact upload archive, reproducible build command, source and license information, validation status, and remaining review requirements.
+
+## Make commands
+
+See [MAKEFILE.md](MAKEFILE.md) for targets, Windows prerequisites, tool overrides, and safe cleanup.

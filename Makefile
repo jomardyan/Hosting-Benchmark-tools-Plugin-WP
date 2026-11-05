@@ -1,131 +1,99 @@
+# GNU Make; Git Bash is required on Windows for existing shell recipes.
+ifeq ($(OS),Windows_NT)
+BASH ?= C:/Program Files/Git/bin/bash.exe
+else
+BASH ?= /bin/bash
+endif
+SHELL := $(BASH)
+.DEFAULT_GOAL := help
+PYTHON ?= python
+PHP ?= php
+GIT ?= git
+GITLEAKS ?= gitleaks
+SOURCE_ZIP ?= dist/source.zip
+
 PLUGIN_SLUG  ?= wp-hosting-benchmark
 MAIN_FILE    ?= wp-hosting-benchmark.php
 OUTPUT_DIR   ?= dist
 VERSION_PART ?= patch
 NEW_VERSION  ?=
 
-.DEFAULT_GOAL := help
 
-.PHONY: help build bump zip clean lint check version dist
 
-build: bump zip ## Bump the plugin version, then build the distributable ZIP.
-check: lint     ## Run all local checks.
+build: zip ## Build the current private plugin version without bumping source files.
+check: repository-check ## Run all local checks.
 
-# ──────────────────────────────────────────────
-# Windows — PowerShell recipes
-# ──────────────────────────────────────────────
-ifeq ($(OS),Windows_NT)
 POWERSHELL ?= powershell
 
-help: ## Show available make targets.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -Command "$$targets = Select-String -Path '$(MAKEFILE_LIST)' -Pattern '^[a-zA-Z0-9_-]+:.*?## ' | ForEach-Object { $$name, $$desc = $$_.Line -split ':.*?## ', 2; [pscustomobject]@{Target=$$name; Description=$$desc} }; $$targets | Format-Table -AutoSize"
-
-bump: ## Increase plugin version. Use VERSION_PART=patch|minor|major or NEW_VERSION=x.y.z.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 -MainFile "$(MAIN_FILE)" -VersionPart "$(VERSION_PART)" -NewVersion "$(NEW_VERSION)"
-
-zip: ## Create dist/<plugin-slug>-<version>.zip.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-plugin.ps1 -PluginSlug "$(PLUGIN_SLUG)" -MainFile "$(MAIN_FILE)" -OutputDir "$(OUTPUT_DIR)"
-
-lint: ## Run php -l against distributable plugin PHP files.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -Command "$$php = Get-Command php -ErrorAction SilentlyContinue; if (-not $$php) { throw 'PHP is not installed or is not on PATH.' }; $$files = @(); foreach ($$path in @('$(MAIN_FILE)', 'uninstall.php')) { if (Test-Path -LiteralPath $$path) { $$files += Get-Item -LiteralPath $$path } }; if (Test-Path -LiteralPath 'src') { $$files += Get-ChildItem -LiteralPath 'src' -Recurse -File -Filter '*.php' }; if (-not $$files) { Write-Host 'No PHP files found.'; exit 0 }; foreach ($$file in $$files) { & $$php.Source -l $$file.FullName; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE } }"
-
-version: ## Print the plugin version from the main plugin file.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -Command "$$content = Get-Content -LiteralPath '$(MAIN_FILE)' -Raw; $$match = [regex]::Match($$content, '(?m)^[\s\/*#@]*Version:\s*(.+)$$'); if (-not $$match.Success) { throw 'Could not determine plugin version from $(MAIN_FILE)' }; $$match.Groups[1].Value.Trim()"
-
-dist: ## List generated build artifacts.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(OUTPUT_DIR)') { Get-ChildItem -LiteralPath '$(OUTPUT_DIR)' | Format-Table -AutoSize } else { Write-Host 'No $(OUTPUT_DIR) directory found.' }"
-
-clean: ## Remove generated build artifacts.
-	@$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(OUTPUT_DIR)') { Remove-Item -LiteralPath '$(OUTPUT_DIR)' -Recurse -Force; Write-Host 'Removed $(OUTPUT_DIR).' } else { Write-Host 'Nothing to clean.' }"
-
-# ──────────────────────────────────────────────
-# Linux / macOS — bash recipes
-# ──────────────────────────────────────────────
+help: ## List commands without building or changing versions
+	@"$(PYTHON)" tools/make_support.py help
+bump: ## Explicitly bump VERSION_PART or set NEW_VERSION using the existing script
+ifeq ($(OS),Windows_NT)
+	"$(POWERSHELL)" -NoProfile -File scripts/bump-version.ps1 -MainFile "$(MAIN_FILE)" -VersionPart "$(VERSION_PART)" -NewVersion "$(NEW_VERSION)"
 else
-SHELL := /bin/bash
-
-help: ## Show available make targets.
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | \
-	  awk -F ':.*?## ' '!seen[$$1]++ {printf "%-15s %s\n", $$1, $$2}'
-
-bump: ## Increase plugin version. Use VERSION_PART=patch|minor|major or NEW_VERSION=x.y.z.
-	@bash scripts/bump-version.sh "$(MAIN_FILE)" readme.txt "$(VERSION_PART)" "$(NEW_VERSION)"
-
-zip: ## Create dist/<plugin-slug>-<version>.zip.
-	@bash scripts/build-plugin.sh "$(PLUGIN_SLUG)" "$(MAIN_FILE)" "$(OUTPUT_DIR)"
-
-lint: ## Run php -l against distributable plugin PHP files.
-	@command -v php >/dev/null 2>&1 || { echo "PHP is not installed or is not on PATH." >&2; exit 1; }; \
-	result=0; \
-	for f in $$([ -f "$(MAIN_FILE)" ] && echo "$(MAIN_FILE)"; \
-	            [ -f "uninstall.php" ] && echo "uninstall.php"; \
-	            [ -d src ] && find src -name "*.php" || true); do \
-	  php -l "$$f" || result=$$?; \
-	done; \
-	exit $$result
-
-version: ## Print the plugin version from the main plugin file.
-	@grep -m1 'Version:' "$(MAIN_FILE)" | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]'
-
-dist: ## List generated build artifacts.
-	@if [ -d "$(OUTPUT_DIR)" ]; then ls -lh "$(OUTPUT_DIR)"; \
-	else echo "No $(OUTPUT_DIR) directory found."; fi
-
-clean: ## Remove generated build artifacts.
-	@if [ -d "$(OUTPUT_DIR)" ]; then rm -rf "$(OUTPUT_DIR)"; echo "Removed $(OUTPUT_DIR)."; \
-	else echo "Nothing to clean."; fi
-
+	"$(BASH)" scripts/bump-version.sh "$(MAIN_FILE)" readme.txt "$(VERSION_PART)" "$(NEW_VERSION)"
 endif
+zip: ## Build the existing private plugin ZIP without changing the version
+	"$(PYTHON)" tools/make_support.py guard "$(OUTPUT_DIR)"
+ifeq ($(OS),Windows_NT)
+	"$(POWERSHELL)" -NoProfile -File scripts/build-plugin.ps1 -PluginSlug "$(PLUGIN_SLUG)" -MainFile "$(MAIN_FILE)" -OutputDir "$(OUTPUT_DIR)"
+else
+	"$(BASH)" scripts/build-plugin.sh "$(PLUGIN_SLUG)" "$(MAIN_FILE)" "$(OUTPUT_DIR)"
+endif
+lint: ## Run the repository PHP and JavaScript syntax checks
+	"$(PYTHON)" tools/check_sources.py
+version: ## Read the plugin header without shell grep
+	"$(PYTHON)" tools/make_support.py version "$(MAIN_FILE)"
+dist: ## List local build outputs
+	"$(PYTHON)" -c "from pathlib import Path; import sys; p=Path(sys.argv[1]); print('\n'.join(str(x) for x in sorted(p.glob('*'))))" "$(OUTPUT_DIR)"
+clean: ## Remove only guarded generated outputs
+	"$(PYTHON)" tools/make_support.py clean "$(OUTPUT_DIR)" "$(SOURCE_ZIP)"
 
-.PHONY: package
-package:
-	mkdir -p dist
-	git archive --format=zip HEAD -o dist/source.zip
+package: ## Archive committed sources into SOURCE_ZIP (not an installable binary)
+	"$(PYTHON)" tools/make_support.py source-package "$(SOURCE_ZIP)" --git "$(GIT)"
 
-.PHONY: install
-install:
-	php --version
+install: ## Install declared development dependencies
+	"$(PHP)" --version
 
-.PHONY: dev
-dev:
+dev: ## Show local development setup guidance
 	@echo "Install this plugin in a local WordPress/WooCommerce environment; see README.md."
 
-.PHONY: test
-test:
-	php tests/regression.php
+test: ## Run the project regression suite
+	"$(PHP)" tests/regression.php
 
-.PHONY: security
-security:
-	gitleaks git --redact --no-banner
+security: ## Run the project security/dependency checks
+	"$(GITLEAKS)" git --redact --no-banner
 
-.PHONY: audit-lint
-audit-lint:
-	python3 tools/check_sources.py
+audit-lint: makefile-check ## Run the CI source quality checks
+	"$(PYTHON)" tools/check_sources.py
 
-.PHONY: audit-test
-audit-test:
-	php tests/regression.php
+audit-test: ## Run the complete CI regression suite
+	"$(PHP)" tests/regression.php
 
-.PHONY: audit-build
-audit-build:
-	python3 tools/check_sources.py
+audit-build: ## Run the CI build checks
+	"$(PYTHON)" tools/check_sources.py
 
-.PHONY: audit-security
-audit-security:
-	gitleaks git --redact --no-banner
+audit-security: ## Run the CI security checks
+	"$(GITLEAKS)" git --redact --no-banner
 
-.PHONY: repository-check
-repository-check: audit-lint audit-test audit-build
+repository-check: audit-lint audit-test audit-build ## Run all existing CI lint, test and build checks
 
-.PHONY: audit-install
-audit-install:
-	php --version
+audit-install: ## Install the locked CI dependencies
+	"$(PHP)" --version
 
-.PHONY: wordpress-org-package
-wordpress-org-package:
-	python3 tools/build_wordpress_org.py
+wordpress-org-package: ## Build the audited installable WordPress directory edition
+	"$(PYTHON)" tools/build_wordpress_org.py
 
-.PHONY: wordpress-org-check
-wordpress-org-check:
-	python3 tools/test_directory_domains.py
-	python3 tools/build_wordpress_org.py
+wordpress-org-check: ## Validate translation contracts and build the directory edition
+	"$(PYTHON)" tools/test_directory_domains.py
+	"$(PYTHON)" tools/build_wordpress_org.py
+
+source-package: package ## Alias for the committed-source archive
+
+
+makefile-check: ## Test output safety, path spaces and source-archive integrity
+	"$(PYTHON)" tools/test_make_support.py
+
+.PHONY: build check help bump zip lint version dist \
+	clean package install dev test security audit-lint audit-test \
+	audit-build audit-security repository-check audit-install wordpress-org-package wordpress-org-check source-package makefile-check

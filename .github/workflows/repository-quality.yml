@@ -25,6 +25,10 @@ jobs:
           extensions: mbstring, dom, pdo_sqlite, sodium, fileinfo, zip
           tools: composer:v2
           coverage: none
+      - name: Verify Make help and command graph
+        run: |
+          make help
+          make --dry-run install test build package clean security
       - run: make audit-install
       - run: make audit-lint
       - run: make audit-test
