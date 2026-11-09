@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Lolisoft Press addon Hosting Benchmarks
  * Description: Benchmarks the hosting performance of the WordPress site where it is installed.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: Hayk Jomardyan - Lolisoft
@@ -21,7 +21,7 @@ if ( ! defined( 'WP_HOSTING_BENCHMARK_VERSION' ) ) {
 define( 'WP_HOSTING_BENCHMARK_FILE', __FILE__ );
 define( 'WP_HOSTING_BENCHMARK_URL', plugin_dir_url( __FILE__ ) );
 define( 'WP_HOSTING_BENCHMARK_DIR', plugin_dir_path( __FILE__ ) );
-define( 'WP_HOSTING_BENCHMARK_VERSION', '1.1.1' );
+define( 'WP_HOSTING_BENCHMARK_VERSION', '1.1.2' );
 
 spl_autoload_register(
 	static function ( $class ) {

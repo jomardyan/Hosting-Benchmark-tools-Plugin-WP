@@ -166,3 +166,7 @@ See [WORDPRESS-ORG.md](WORDPRESS-ORG.md) for the exact upload archive, reproduci
 ## Make commands
 
 See [MAKEFILE.md](MAKEFILE.md) for targets, Windows prerequisites, tool overrides, and safe cleanup.
+
+## Maintenance verification — 1.1.2
+
+See [the maintenance audit](AUDIT-2026-11-09.md) for changes, exact test scope, dependency advisories and remaining integration limits. The audit covers WordPress 7.1.4 and PHP 8.2–8.5; its startup checks do not certify external service accounts.

@@ -2,7 +2,7 @@
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Tags: benchmark, performance, hosting, diagnostics, admin
@@ -44,6 +44,10 @@ No. Benchmark actions are admin-only and require `manage_options` plus valid non
 History is stored in the `wp_hosting_benchmark_history` option.
 
 == Changelog ==
+
+= 1.1.2 =
+* Refresh release documentation and record verified WordPress/PHP compatibility, dependency checks and coverage limits.
+
 
 = 1.1.0 =
 * New Settings page: default intensity, history limit (1–200), schedule (off/daily/weekly), and per-test enable/disable.
