@@ -62,8 +62,8 @@ class Page {
 	 */
 	public function register_menu() {
 		add_menu_page(
-			__( 'Hosting Benchmark', 'wp-hosting-benchmark' ),
-			__( 'Hosting Benchmark', 'wp-hosting-benchmark' ),
+			__( 'LS Hosting Benchmarks', 'wp-hosting-benchmark' ),
+			__( 'LS Hosting Benchmarks', 'wp-hosting-benchmark' ),
 			self::CAPABILITY,
 			'wp-hosting-benchmark',
 			array( $this, 'render_page' ),
@@ -71,10 +71,13 @@ class Page {
 			59
 		);
 
+		// Keep submenu screen IDs stable when the visible menu name changes.
+		$GLOBALS['admin_page_hooks']['wp-hosting-benchmark'] = 'hosting-benchmark';
+
 		// Rename the first auto-generated submenu so the Dashboard label is clearer.
 		add_submenu_page(
 			'wp-hosting-benchmark',
-			__( 'Hosting Benchmark Dashboard', 'wp-hosting-benchmark' ),
+			__( 'LS Hosting Benchmarks Dashboard', 'wp-hosting-benchmark' ),
 			__( 'Dashboard', 'wp-hosting-benchmark' ),
 			self::CAPABILITY,
 			'wp-hosting-benchmark',
@@ -198,7 +201,7 @@ class Page {
 
 		echo '<div class="wrap wp-hosting-benchmark-page">';
 		$this->render_inline_assets();
-		echo '<h1>' . esc_html__( 'Hosting Benchmark', 'wp-hosting-benchmark' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'LS Hosting Benchmarks', 'wp-hosting-benchmark' ) . '</h1>';
 		echo '<p class="wp-hosting-benchmark-intro">' . esc_html__( 'Run short, hosting-safe benchmarks from the admin area, review real-world WordPress performance signals, and translate the results into a clear hosting verdict.', 'wp-hosting-benchmark' ) . '</p>';
 
 		if ( $selected_run ) {

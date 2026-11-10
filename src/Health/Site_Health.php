@@ -51,12 +51,12 @@ class Site_Health {
 		}
 
 		$tests['direct']['wp_hosting_benchmark_latest_run'] = array(
-			'label' => __( 'Hosting Benchmark report', 'wp-hosting-benchmark' ),
+			'label' => __( 'LS Hosting Benchmarks report', 'wp-hosting-benchmark' ),
 			'test'  => array( $this, 'test_latest_run' ),
 		);
 
 		$tests['direct']['wp_hosting_benchmark_loopback'] = array(
-			'label' => __( 'Hosting Benchmark loopback latency', 'wp-hosting-benchmark' ),
+			'label' => __( 'LS Hosting Benchmarks loopback latency', 'wp-hosting-benchmark' ),
 			'test'  => array( $this, 'test_loopback_latency' ),
 		);
 
@@ -70,7 +70,7 @@ class Site_Health {
 	 */
 	public function test_latest_run() {
 		$run = $this->storage->get_latest_run();
-		$base_actions = '<p><a href="' . esc_url( admin_url( 'admin.php?page=wp-hosting-benchmark' ) ) . '">' . esc_html__( 'Open Hosting Benchmark', 'wp-hosting-benchmark' ) . '</a></p>';
+		$base_actions = '<p><a href="' . esc_url( admin_url( 'admin.php?page=wp-hosting-benchmark' ) ) . '">' . esc_html__( 'Open LS Hosting Benchmarks', 'wp-hosting-benchmark' ) . '</a></p>';
 
 		if ( ! $run ) {
 			return array(
@@ -121,7 +121,7 @@ class Site_Health {
 	 */
 	public function test_loopback_latency() {
 		$run = $this->storage->get_latest_run();
-		$base_actions = '<p><a href="' . esc_url( admin_url( 'admin.php?page=wp-hosting-benchmark' ) ) . '">' . esc_html__( 'Open Hosting Benchmark', 'wp-hosting-benchmark' ) . '</a></p>';
+		$base_actions = '<p><a href="' . esc_url( admin_url( 'admin.php?page=wp-hosting-benchmark' ) ) . '">' . esc_html__( 'Open LS Hosting Benchmarks', 'wp-hosting-benchmark' ) . '</a></p>';
 
 		$default = array(
 			'label'       => __( 'Loopback latency not measured yet.', 'wp-hosting-benchmark' ),

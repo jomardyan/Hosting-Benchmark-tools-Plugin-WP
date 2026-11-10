@@ -123,7 +123,7 @@ class Cron {
 		} catch ( \Throwable $throwable ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( 'Lolisoft Press addon Hosting Benchmarks scheduled run failed: ' . sanitize_text_field( $throwable->getMessage() ) );
+				error_log( 'LS Hosting Benchmarks scheduled run failed: ' . sanitize_text_field( $throwable->getMessage() ) );
 			}
 		} finally {
 			delete_transient( self::LOCK_TRANSIENT );

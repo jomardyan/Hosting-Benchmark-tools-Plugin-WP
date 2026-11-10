@@ -1,6 +1,6 @@
-# Lolisoft Press addon Hosting Benchmarks
+# LS Hosting Benchmarks
 
-Lolisoft Press addon Hosting Benchmarks is a production-ready WordPress plugin that lets administrators run short, safe hosting benchmarks from wp-admin and review a clear report with scores, raw metrics, environment details, history, and JSON export.
+LS Hosting Benchmarks is a WordPress plugin that lets administrators run short, safe hosting benchmarks from wp-admin and review a clear report with scores, raw metrics, environment details, history, and JSON export.
 
 ## File tree
 
@@ -25,8 +25,8 @@ src/
 ## Installation
 
 1. Copy the plugin folder into `wp-content/plugins/wp-hosting-benchmark`.
-2. Activate **Lolisoft Press addon Hosting Benchmarks** from the WordPress Plugins screen.
-3. Open **Hosting Benchmark** from the WordPress admin menu.
+2. Activate **LS Hosting Benchmarks** from the WordPress Plugins screen.
+3. Open **LS Hosting Benchmarks** from the WordPress admin menu.
 
 ## Build ZIP
 

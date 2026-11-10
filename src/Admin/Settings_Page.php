@@ -38,14 +38,14 @@ class Settings_Page {
 	}
 
 	/**
-	 * Add the Settings submenu under the Hosting Benchmark menu.
+	 * Add the Settings submenu under the LS Hosting Benchmarks menu.
 	 *
 	 * @return void
 	 */
 	public function register_menu() {
 		add_submenu_page(
 			'wp-hosting-benchmark',
-			__( 'Hosting Benchmark Settings', 'wp-hosting-benchmark' ),
+			__( 'LS Hosting Benchmarks Settings', 'wp-hosting-benchmark' ),
 			__( 'Settings', 'wp-hosting-benchmark' ),
 			self::CAPABILITY,
 			self::PAGE_SLUG,
@@ -117,7 +117,7 @@ class Settings_Page {
 		$tests    = $plugin && method_exists( $plugin, 'get_runner' ) ? $plugin->get_runner()->get_all_tests() : array();
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Hosting Benchmark Settings', 'wp-hosting-benchmark' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'LS Hosting Benchmarks Settings', 'wp-hosting-benchmark' ) . '</h1>';
 		echo '<p>' . esc_html__( 'Configure the default benchmark behaviour, retention, scheduled runs, and which tests should be included.', 'wp-hosting-benchmark' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'options.php' ) ) . '">';
 		settings_fields( self::OPTION_GROUP );

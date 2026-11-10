@@ -1,7 +1,7 @@
 <?php
 /** Copyright (c) 2026 Hayk Jomardyan - Lolisoft. See LICENSE. */
 /**
- * Plugin Name: Lolisoft Press addon Hosting Benchmarks
+ * Plugin Name: LS Hosting Benchmarks
  * Description: Benchmarks the hosting performance of the WordPress site where it is installed.
  * Version: 1.1.2
  * Requires at least: 6.5

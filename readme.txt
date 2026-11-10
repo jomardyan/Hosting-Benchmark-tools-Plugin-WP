@@ -1,4 +1,4 @@
-=== Lolisoft Press addon Hosting Benchmarks ===
+=== LS Hosting Benchmarks ===
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -11,7 +11,7 @@ Benchmarks safe hosting performance from the WordPress admin area and stores a c
 
 == Description ==
 
-Lolisoft Press addon Hosting Benchmarks runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
+LS Hosting Benchmarks runs short, shared-hosting-safe diagnostics for PHP, CPU, memory, database, autoloaded option footprint, filesystem, cache, real-world WordPress request paths, loopback latency, and WordPress bootstrap timing.
 
 Features include:
 
@@ -27,7 +27,7 @@ Features include:
 
 1. Upload the plugin to `/wp-content/plugins/wp-hosting-benchmark/`.
 2. Activate the plugin through the Plugins screen in WordPress.
-3. Open the **Hosting Benchmark** admin page.
+3. Open the **LS Hosting Benchmarks** admin page.
 
 == Frequently Asked Questions ==
 

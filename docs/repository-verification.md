@@ -23,13 +23,13 @@ and separate remediation; CI does not rewrite history or rotate credentials.
 
 ## Display name and compatibility
 
-The display name is **Lolisoft Press addon Hosting Benchmarks**. Plugin folder names, main-file
+The display name is **LS Hosting Benchmarks**. Plugin folder names, main-file
 basenames, text domains, constants, option names, hooks, REST namespaces and
 database tables retain their existing identities. Existing installations and
 settings therefore keep their upgrade paths. Historical release ZIPs remain historical.
 
-Limited public naming screening on 4 November 2026 found no indexed exact-name
-collision for the full proposed name. The prefix was also screened. An existing
+Earlier public naming screening on 4 November 2026 concerned the former display
+name and prefix; it does not establish availability or clearance of the current LS name. An existing
 Belgian software business uses “Lolisoft”; this screening is not trademark clearance.
 The descriptive references to WooCommerce, WordPress and iFirma identify compatibility
 and do not imply endorsement. Formal clearance remains unresolved; consult
